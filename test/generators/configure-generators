@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 #
 # Create a job for each distro+arch to run test generators and triggers.
+import hashlib
+import json
+import os
 import sys
+from tempfile import TemporaryDirectory
 
 import imgtestlib as testlib
 
@@ -78,6 +82,43 @@ image-build-ostree-trigger-{distro}-{arch}:
 """
 
 
+def manifest_checksum():
+    """
+    Generate all manifest using the default config map without resolving any content and return a single combined
+    checksum for the whole directory. The checksum depends on manifest IDs and the checksums of their sources. This
+    checksum can be used to detect changes in manifests without resolving content but only if it's safe to assume that
+    content sources don't from the same URL don't change (e.g. rpmrepo snapshots).
+    """
+
+    with TemporaryDirectory() as outputdir:
+        cmd = ["go", "run", "./cmd/gen-manifests",
+               "-cache", os.path.join(testlib.TEST_CACHE_ROOT, "rpmmd"),
+               "-output", outputdir,
+               "-packages=false",
+               "-commits=false",
+               "-containers=false"]
+        print(f"Running: {' '.join(cmd)}")
+        out, err = testlib.runcmd(cmd)
+
+        # print stderr in case there were errors or warnings about skipped configurations
+        if err:
+            print(err.decode())
+
+        print("Manifest generation done!\n")
+
+        # collect manifest IDs and sources
+        manifests = testlib.read_manifests(outputdir).values()  # don't care about filenames
+
+    hasher = hashlib.sha256()
+    for data in sorted(manifests, key=lambda v: v["id"]):
+        hasher.update(data["id"].encode())
+        hasher.update(json.dumps(data["data"]["manifest"]["sources"], sort_keys=True).encode())
+        repo_urls = [repo["baseurl"] for repo in data["data"]["build-request"]["repositories"]]
+        hasher.update(json.dumps(repo_urls, sort_keys=True).encode())
+
+    return hasher.hexdigest()
+
+
 def main():
     config_path = sys.argv[1]
     images = testlib.list_images(arches=ARCHITECTURES)
@@ -105,6 +146,9 @@ def main():
         config_file.write("\n".join(trigger_stage))
         config_file.write("\n".join(ostree_gen_stage))
         config_file.write("\n".join(ostree_trigger_stage))
+
+    checksum = manifest_checksum()
+    print(f"Checksum {checksum}")
 
 
 if __name__ == "__main__":
