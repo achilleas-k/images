@@ -16,3 +16,7 @@ func (p *EC2) GetServices() []string {
 		"cloud-init-local.service",
 	}
 }
+
+func (p *EC2) GetKernelArgs() []string {
+	return []string{"ro", "no_timer_check", "console=ttyS0,115200n8", "net.ifnames=0"}
+}
