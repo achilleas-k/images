@@ -7,6 +7,8 @@ type Workload interface {
 	GetRepos() []rpmmd.RepoConfig
 	GetServices() []string
 	GetDisabledServices() []string
+	GetTimezone() string
+	GetLocale() string
 }
 
 type BaseWorkload struct {
@@ -27,4 +29,12 @@ func (p BaseWorkload) GetServices() []string {
 
 func (p BaseWorkload) GetDisabledServices() []string {
 	return []string{}
+}
+
+func (p BaseWorkload) GetTimezone() string {
+	return "UTC"
+}
+
+func (p BaseWorkload) GetLocale() string {
+	return "en_US"
 }
