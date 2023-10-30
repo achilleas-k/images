@@ -15,8 +15,14 @@ import (
 	"github.com/osbuild/images/pkg/rpmmd"
 )
 
-// OSTreeDeployment represents the filesystem tree of a target image based
-// on a deployed ostree commit.
+// OSTreeDeploymentPipeline represents the filesystem tree of a target image
+// based on a deployed ostree commit.
+type OSTreeDeploymentPipeline interface {
+	Name() string
+	Manifest() *Manifest
+	BuildPipeline() *Build
+}
+
 type OSTreeDeployment struct {
 	Base
 
@@ -63,7 +69,7 @@ func NewOSTreeDeployment(buildPipeline *Build,
 	osName string,
 	ignition bool,
 	ignitionPlatform string,
-	platform platform.Platform) *OSTreeDeployment {
+	platform platform.Platform) OSTreeDeploymentPipeline {
 
 	p := &OSTreeDeployment{
 		Base:             NewBase(m, "ostree-deployment", buildPipeline),

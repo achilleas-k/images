@@ -1,8 +1,11 @@
 package manifest
 
 import (
+	"github.com/osbuild/images/internal/environment"
+	"github.com/osbuild/images/internal/workload"
 	"github.com/osbuild/images/pkg/artifact"
 	"github.com/osbuild/images/pkg/container"
+	"github.com/osbuild/images/pkg/disk"
 	"github.com/osbuild/images/pkg/osbuild"
 	"github.com/osbuild/images/pkg/ostree"
 	"github.com/osbuild/images/pkg/platform"
