@@ -201,3 +201,17 @@ type FilePipeline interface {
 	Filename() string
 	SetFilename(fname string)
 }
+
+// OSPipeline is any pipeline that produces an OS filesystem tree.
+type OSPipeline interface {
+	Pipeline
+	TreePipeline
+
+	Partition(*disk.PartitionTable)
+	Customize(OSCustomizations)
+	SetEnvironment(environment.Environment)
+	SetWorkload(workload.Workload)
+	SetOSInfo(product, version, nick string)
+	BLS(bool)
+	InstallWeakDeps(bool)
+}
