@@ -368,6 +368,25 @@ var (
 		exports:             []string{"xz"},
 		basePartitionTables: minimalrawPartitionTables,
 	}
+
+	coreosQcow2ImgType = imageType{
+		name:        "coreos-qcow2",
+		filename:    "disk.qcow2",
+		mimeType:    "application/x-qemu-disk",
+		environment: &environment.KVM{},
+		defaultImageConfig: &distro.ImageConfig{
+			DefaultTarget: common.ToPtr("multi-user.target"),
+		},
+		kernelOptions:       cloudKernelOptions,
+		bootable:            true,
+		rpmOstree:           true,
+		defaultSize:         5 * common.GibiByte,
+		image:               iotImage,
+		buildPipelines:      []string{"build"},
+		payloadPipelines:    []string{"ostree-deployment", "image", "qcow2"},
+		exports:             []string{"qcow2"},
+		basePartitionTables: defaultBasePartitionTables,
+	}
 )
 
 type distribution struct {
