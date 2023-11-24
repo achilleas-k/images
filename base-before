@@ -1,0 +1,66 @@
+{
+  "Size": 0,
+  "UUID": "D209C89E-EA5E-4FBD-B161-B461CCE297E0",
+  "Type": "gpt",
+  "Partitions": [
+    {
+      "Start": 0,
+      "Size": 1048576,
+      "Type": "21686148-6449-6E6F-744E-656564454649",
+      "Bootable": true,
+      "UUID": "FAC7F1FB-3E8D-4137-A512-961DE09A5549",
+      "Payload": null
+    },
+    {
+      "Start": 0,
+      "Size": 209715200,
+      "Type": "C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
+      "Bootable": false,
+      "UUID": "68B2905B-DF3E-4FB3-80FA-49D1E773AA33",
+      "Payload": {
+        "Type": "vfat",
+        "UUID": "7B77-95E7",
+        "Label": "EFI-SYSTEM",
+        "Mountpoint": "/boot/efi",
+        "FSTabOptions": "defaults,uid=0,gid=0,umask=077,shortname=winnt",
+        "FSTabFreq": 0,
+        "FSTabPassNo": 2
+      }
+    },
+    {
+      "Start": 0,
+      "Size": 524288000,
+      "Type": "BC13C2FF-59E6-4262-A352-B275FD6F7172",
+      "Bootable": false,
+      "UUID": "CB07C243-BC44-4717-853E-28852021225B",
+      "Payload": {
+        "Type": "xfs",
+        "UUID": "",
+        "Label": "boot",
+        "Mountpoint": "/boot",
+        "FSTabOptions": "defaults",
+        "FSTabFreq": 0,
+        "FSTabPassNo": 0
+      }
+    },
+    {
+      "Start": 0,
+      "Size": 2147483648,
+      "Type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+      "Bootable": false,
+      "UUID": "6264D520-3FB9-423F-8AB8-7A0A8E3D3562",
+      "Payload": {
+        "Type": "xfs",
+        "UUID": "",
+        "Label": "root",
+        "Mountpoint": "/",
+        "FSTabOptions": "defaults",
+        "FSTabFreq": 0,
+        "FSTabPassNo": 0
+      }
+    }
+  ],
+  "SectorSize": 0,
+  "ExtraPadding": 0,
+  "StartOffset": 0
+}

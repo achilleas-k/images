@@ -1,0 +1,65 @@
+{
+  "Size": 5908725760,
+  "UUID": "D209C89E-EA5E-4FBD-B161-B461CCE297E0",
+  "Type": "gpt",
+  "Partitions": [
+    {
+      "Start": 537919488,
+      "Size": 5370789376,
+      "Type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+      "Bootable": false,
+      "UUID": "6264D520-3FB9-423F-8AB8-7A0A8E3D3562",
+      "Payload": {
+        "Name": "rootvg",
+        "Description": "built with lvm2 and osbuild",
+        "LogicalVolumes": [
+          {
+            "Name": "rootlv",
+            "Size": 3221225472,
+            "Payload": {
+              "Type": "xfs",
+              "UUID": "4f5aa6ae-c3fc-48c6-aae0-81ac8120c720",
+              "Label": "root",
+              "Mountpoint": "/",
+              "FSTabOptions": "defaults",
+              "FSTabFreq": 0,
+              "FSTabPassNo": 0
+            }
+          },
+          {
+            "Name": "foolv",
+            "Size": 2147483648,
+            "Payload": {
+              "Type": "xfs",
+              "UUID": "efcd6cea-84b6-425e-a07b-e063716f96dd",
+              "Label": "",
+              "Mountpoint": "/foo",
+              "FSTabOptions": "defaults",
+              "FSTabFreq": 0,
+              "FSTabPassNo": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "Start": 1048576,
+      "Size": 536870912,
+      "Type": "BC13C2FF-59E6-4262-A352-B275FD6F7172",
+      "Bootable": false,
+      "UUID": "3801aaca-eedf-4d5b-9066-64e8c0e4a771",
+      "Payload": {
+        "Type": "xfs",
+        "UUID": "cdd01d75-045c-4f00-8f8a-796bce6c512c",
+        "Label": "",
+        "Mountpoint": "/boot",
+        "FSTabOptions": "defaults",
+        "FSTabFreq": 0,
+        "FSTabPassNo": 0
+      }
+    }
+  ],
+  "SectorSize": 0,
+  "ExtraPadding": 0,
+  "StartOffset": 0
+}
