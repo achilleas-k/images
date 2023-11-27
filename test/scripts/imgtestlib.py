@@ -12,9 +12,6 @@ CONFIG_MAP = "./test/config-map.json"
 S3_BUCKET = "s3://{bucket}".format(bucket=os.environ.get("AWS_BUCKET", "image-builder-ci-artifacts"))
 S3_PREFIX = "images/builds"
 
-REGISTRY = "registry.gitlab.com/redhat/services/products/image-builder/ci/images"
-
-
 # ostree containers are pushed to the CI registry to be reused by dependants
 OSTREE_CONTAINERS = [
     "iot-container",
@@ -114,6 +111,26 @@ def dl_s3_configs(destination):
     ok = job.returncode == 0
     if not ok:
         print(f"⚠️ Failed to sync contents of {s3url}:")
+        print(job.stderr.decode())
+    return ok
+
+
+def dl_s3_image(distro, arch, manifest_id, destination):
+    """
+    Downloads an image and its metadata from the s3 bucket.
+    """
+    s3url = f"{S3_BUCKET}/{S3_PREFIX}/"
+    path = f"{distro}/{arch}/{manifest_id}/"
+
+    source = f"{s3url}/{path}"
+    print(f"⬇️ Downloading {path} from {s3url}")
+    # only download info.json (exclude everything, then include) files, otherwise we get manifests and whole images
+    job = sp.run(["s3cmd", *s3_auth_args(), "sync",
+                  source, destination],
+                 capture_output=True)
+    ok = job.returncode == 0
+    if not ok:
+        print(f"⚠️ Failed to download {source}:")
         print(job.stderr.decode())
     return ok
 

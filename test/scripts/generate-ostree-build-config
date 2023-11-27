@@ -197,8 +197,8 @@ def default_ref(distro, arch):
 def setup_dependencies(manifests, config_map, distro, arch):
     """
     For each config in the config map, list all image configurations (distro, arch, image type) that it applies to and
-    use the manifests to find the corresponding manifest IDs. Pull and run the corresponding dependency container from
-    the registry and write a new config (and config map) that replaces the ostree options with the container URL and
+    use the manifests to find the corresponding manifest IDs. Download and run the corresponding dependency container
+    from the cache and write a new config (and config map) that replaces the ostree options with the container URL and
     port.
     The config map and configs that function yields can be used to generate manifests with ostree commits resolved.
     The containers are stopped when the context exits.
@@ -236,7 +236,6 @@ def setup_dependencies(manifests, config_map, distro, arch):
             ic_image_type = image_config["image-type"]
             dep_build_name = testlib.gen_build_name(ic_distro, ic_arch, dep_image_type, dep_config_name)
             manifest_id = manifests[dep_build_name + ".json"]["id"]
-            container = f"{testlib.REGISTRY}/{dep_build_name}:build-{manifest_id}"
 
             # start each container once on an incremental port
             port = container_ports.get(container)
