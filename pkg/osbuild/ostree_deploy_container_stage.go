@@ -68,7 +68,7 @@ func NewOSTreeDeployContainerStage(options *OSTreeDeployContainerStageOptions, i
 		panic(err)
 	}
 	return &Stage{
-		Type:    "org.osbuild.ostree.deploy.container",
+		Type:    "org.osbuild.bootc",
 		Options: options,
 		Inputs:  inputs,
 	}

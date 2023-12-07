@@ -63,6 +63,9 @@ func (p *Build) getPackageSetChain(distro Distro) []rpmmd.PackageSet {
 		"selinux-policy-targeted", // needed to build the build pipeline
 		"coreutils",               // /usr/bin/cp - used all over
 		"xz",                      // usage unclear
+		"podman",
+		"netavark",
+		"containernetworking-plugins",
 	}
 
 	packages = append(packages, p.runner.GetBuildPackages()...)
