@@ -17,6 +17,7 @@ import (
 
 	"github.com/gobwas/glob"
 
+	"github.com/osbuild/images/internal/cmdutil"
 	"github.com/osbuild/images/pkg/blueprint"
 	"github.com/osbuild/images/pkg/container"
 	"github.com/osbuild/images/pkg/distro"
@@ -42,43 +43,31 @@ func (mv *multiValue) Set(v string) error {
 }
 
 type buildRequest struct {
-	Distro       string             `json:"distro,omitempty"`
-	Arch         string             `json:"arch,omitempty"`
-	ImageType    string             `json:"image-type,omitempty"`
-	Repositories []rpmmd.RepoConfig `json:"repositories,omitempty"`
-	Config       *BuildConfig       `json:"config"`
-}
-
-type BuildConfig struct {
-	Name      string               `json:"name"`
-	OSTree    *ostree.ImageOptions `json:"ostree,omitempty"`
-	Blueprint *blueprint.Blueprint `json:"blueprint,omitempty"`
-	Depends   BuildDependency      `json:"depends,omitempty"`
-}
-
-type BuildDependency struct {
-	Config    string `json:"config"`
-	ImageType string `json:"image-type"`
+	Distro       string               `json:"distro,omitempty"`
+	Arch         string               `json:"arch,omitempty"`
+	ImageType    string               `json:"image-type,omitempty"`
+	Repositories []rpmmd.RepoConfig   `json:"repositories,omitempty"`
+	Config       *cmdutil.BuildConfig `json:"config"`
 }
 
 // BuildConfigs is a nested map representing the configs to use for each
 // distro/arch/image-type. If any component is empty, it maps to all values.
-type BuildConfigs map[string]map[string]map[string][]BuildConfig
+type BuildConfigs map[string]map[string]map[string][]cmdutil.BuildConfig
 
-func (bc BuildConfigs) Insert(distro, arch, imageType string, cfg BuildConfig) {
+func (bc BuildConfigs) Insert(distro, arch, imageType string, cfg cmdutil.BuildConfig) {
 	distroCfgs := bc[distro]
 	if distroCfgs == nil {
-		distroCfgs = make(map[string]map[string][]BuildConfig)
+		distroCfgs = make(map[string]map[string][]cmdutil.BuildConfig)
 	}
 
 	distroArchCfgs := distroCfgs[arch]
 	if distroArchCfgs == nil {
-		distroArchCfgs = make(map[string][]BuildConfig)
+		distroArchCfgs = make(map[string][]cmdutil.BuildConfig)
 	}
 
 	distroArchItCfgs := distroArchCfgs[imageType]
 	if distroArchItCfgs == nil {
-		distroArchItCfgs = make([]BuildConfig, 0)
+		distroArchItCfgs = make([]cmdutil.BuildConfig, 0)
 	}
 
 	distroArchItCfgs = append(distroArchItCfgs, cfg)
@@ -87,8 +76,8 @@ func (bc BuildConfigs) Insert(distro, arch, imageType string, cfg BuildConfig) {
 	bc[distro] = distroCfgs
 }
 
-func (bc BuildConfigs) Get(distro, arch, imageType string) []BuildConfig {
-	configs := make([]BuildConfig, 0)
+func (bc BuildConfigs) Get(distro, arch, imageType string) []cmdutil.BuildConfig {
+	configs := make([]cmdutil.BuildConfig, 0)
 	for distroName, distroCfgs := range bc {
 		distroGlob := glob.MustCompile(distroName)
 		if distroGlob.Match(distro) {
@@ -106,26 +95,6 @@ func (bc BuildConfigs) Get(distro, arch, imageType string) []BuildConfig {
 		}
 	}
 	return configs
-}
-
-func loadConfig(path string) BuildConfig {
-	fp, err := os.Open(path)
-	if err != nil {
-		panic(fmt.Sprintf("failed to open config %q: %s", path, err.Error()))
-	}
-	defer fp.Close()
-
-	dec := json.NewDecoder(fp)
-	dec.DisallowUnknownFields()
-	var conf BuildConfig
-
-	if err := dec.Decode(&conf); err != nil {
-		panic(fmt.Sprintf("failed to unmarshal config %q: %s", path, err.Error()))
-	}
-	if dec.More() {
-		panic(fmt.Sprintf("multiple configuration objects or extra data found in %q", path))
-	}
-	return conf
 }
 
 func loadConfigMap(configPath string) BuildConfigs {
@@ -167,7 +136,7 @@ func loadConfigMap(configPath string) BuildConfigs {
 			cfgDir := filepath.Dir(configPath)
 			path = filepath.Join(cfgDir, path)
 		}
-		config := loadConfig(path)
+		config := cmdutil.LoadConfig(path)
 		for _, d := range emptyFallback(filters.Distros) {
 			for _, a := range emptyFallback(filters.Arches) {
 				for _, it := range emptyFallback(filters.ImageTypes) {
@@ -185,7 +154,7 @@ func loadConfigMap(configPath string) BuildConfigs {
 // image types.
 func loadImgConfig(configPath string) BuildConfigs {
 	cm := make(BuildConfigs)
-	config := loadConfig(configPath)
+	config := cmdutil.LoadConfig(configPath)
 	cm.Insert("*", "*", "*", config)
 	return cm
 }
@@ -195,7 +164,7 @@ type manifestJob func(chan string) error
 func makeManifestJob(
 	name string,
 	imgType distro.ImageType,
-	bc BuildConfig,
+	bc cmdutil.BuildConfig,
 	distribution distro.Distro,
 	repos []rpmmd.RepoConfig,
 	archName string,
@@ -447,23 +416,6 @@ func save(ms manifest.OSBuildManifest, pkgs map[string][]rpmmd.PackageSpec, cont
 	return nil
 }
 
-func filterRepos(repos []rpmmd.RepoConfig, typeName string) []rpmmd.RepoConfig {
-	filtered := make([]rpmmd.RepoConfig, 0)
-	for _, repo := range repos {
-		if len(repo.ImageTypeTags) == 0 {
-			filtered = append(filtered, repo)
-		} else {
-			for _, tt := range repo.ImageTypeTags {
-				if tt == typeName {
-					filtered = append(filtered, repo)
-					break
-				}
-			}
-		}
-	}
-	return filtered
-}
-
 // resolveArgValues returns a list of valid values from the list of values on the
 // command line. Invalid values are returned separately. Globs are expanded.
 // If the args are empty, the valueList is returned as is.
@@ -589,7 +541,7 @@ func main() {
 				if err != nil {
 					panic(fmt.Sprintf("failed to get repositories for %s/%s: %v", distroName, archName, err))
 				}
-				repos = filterRepos(repos, imgTypeName)
+				repos = cmdutil.FilterRepos(repos, imgTypeName)
 				if len(repos) == 0 {
 					fmt.Printf("no repositories defined for %s/%s/%s\n", distroName, archName, imgTypeName)
 					if skipNorepos {

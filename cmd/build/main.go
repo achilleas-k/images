@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/osbuild/images/internal/cmdutil"
 	"github.com/osbuild/images/pkg/arch"
 	"github.com/osbuild/images/pkg/blueprint"
 	"github.com/osbuild/images/pkg/container"
@@ -34,30 +35,7 @@ func check(err error) {
 	}
 }
 
-type BuildConfig struct {
-	Name      string               `json:"name"`
-	OSTree    *ostree.ImageOptions `json:"ostree,omitempty"`
-	Blueprint *blueprint.Blueprint `json:"blueprint,omitempty"`
-	Depends   interface{}          `json:"depends,omitempty"` // ignored
-}
-
-func loadConfig(path string) BuildConfig {
-	fp, err := os.Open(path)
-	check(err)
-	defer fp.Close()
-
-	dec := json.NewDecoder(fp)
-	dec.DisallowUnknownFields()
-	var conf BuildConfig
-
-	check(dec.Decode(&conf))
-	if dec.More() {
-		fail(fmt.Sprintf("multiple configuration objects or extra data found in %q", path))
-	}
-	return conf
-}
-
-func makeManifest(imgType distro.ImageType, config BuildConfig, distribution distro.Distro, repos []rpmmd.RepoConfig, archName string, seedArg int64, cacheRoot string) (manifest.OSBuildManifest, error) {
+func makeManifest(imgType distro.ImageType, config cmdutil.BuildConfig, distribution distro.Distro, repos []rpmmd.RepoConfig, archName string, seedArg int64, cacheRoot string) (manifest.OSBuildManifest, error) {
 	cacheDir := filepath.Join(cacheRoot, archName+distribution.Name())
 
 	options := distro.ImageOptions{Size: 0}
@@ -183,23 +161,6 @@ func u(s string) string {
 	return strings.Replace(s, "-", "_", -1)
 }
 
-func filterRepos(repos []rpmmd.RepoConfig, typeName string) []rpmmd.RepoConfig {
-	filtered := make([]rpmmd.RepoConfig, 0)
-	for _, repo := range repos {
-		if len(repo.ImageTypeTags) == 0 {
-			filtered = append(filtered, repo)
-		} else {
-			for _, tt := range repo.ImageTypeTags {
-				if tt == typeName {
-					filtered = append(filtered, repo)
-					break
-				}
-			}
-		}
-	}
-	return filtered
-}
-
 func main() {
 	// common args
 	var outputDir, osbuildStore, rpmCacheRoot string
@@ -227,7 +188,7 @@ func main() {
 	}
 	distroFac := distrofactory.NewDefault()
 
-	config := loadConfig(configFile)
+	config := cmdutil.LoadConfig(configFile)
 
 	if err := os.MkdirAll(outputDir, 0777); err != nil {
 		fail(fmt.Sprintf("failed to create target directory: %s", err.Error()))
@@ -260,7 +221,7 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("failed to get repositories for %s/%s: %v", distroName, archName, err))
 	}
-	repos = filterRepos(repos, imgTypeName)
+	repos = cmdutil.FilterRepos(repos, imgTypeName)
 	if len(repos) == 0 {
 		fail(fmt.Sprintf("no repositories defined for %s/%s\n", distroName, archName))
 	}
