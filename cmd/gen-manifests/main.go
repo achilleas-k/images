@@ -473,7 +473,10 @@ func main() {
 
 	flag.Parse()
 
-	seedArg := int64(0)
+	rngSeed, err := cmdutil.NewRNGSeed()
+	if err != nil {
+		panic(err)
+	}
 
 	testedRepoRegistry, err := reporegistry.NewTestedDefault()
 	if err != nil {
@@ -560,7 +563,7 @@ func main() {
 				}
 
 				for _, itConfig := range imgTypeConfigs {
-					job := makeManifestJob(itConfig.Name, imgType, itConfig, distribution, repos, archName, seedArg, outputDir, cacheRoot, contentResolve, metadata)
+					job := makeManifestJob(itConfig.Name, imgType, itConfig, distribution, repos, archName, rngSeed, outputDir, cacheRoot, contentResolve, metadata)
 					jobs = append(jobs, job)
 				}
 			}

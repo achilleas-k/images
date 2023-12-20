@@ -181,7 +181,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	seedArg := int64(0)
+	rngSeed, err := cmdutil.NewRNGSeed()
+	check(err)
 	testedRepoRegistry, err := reporegistry.NewTestedDefault()
 	if err != nil {
 		panic(fmt.Sprintf("failed to create repo registry with tested distros: %v", err))
@@ -227,7 +228,7 @@ func main() {
 	}
 
 	fmt.Printf("Generating manifest for %s: ", config.Name)
-	mf, err := makeManifest(imgType, config, distribution, repos, archName, seedArg, rpmCacheRoot)
+	mf, err := makeManifest(imgType, config, distribution, repos, archName, rngSeed, rpmCacheRoot)
 	if err != nil {
 		check(err)
 	}
