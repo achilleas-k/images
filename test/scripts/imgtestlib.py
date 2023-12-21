@@ -62,8 +62,11 @@ NullBuild:
 """
 
 
-def runcmd(cmd, stdin=None):
-    job = sp.run(cmd, input=stdin, capture_output=True)
+def runcmd(cmd, stdin=None, extra_env=None):
+    if extra_env:
+        env = os.environ
+        env.update(extra_env)
+    job = sp.run(cmd, input=stdin, capture_output=True, env=env)
     if job.returncode > 0:
         print(f"❌ Command failed: {cmd}")
         if job.stdout:
@@ -320,3 +323,14 @@ def get_osbuild_commit(distro_version):
         data = json.load(schutzfile)
 
     return data.get(distro_version, {}).get("dependencies", {}).get("osbuild", {}).get("commit", None)
+
+
+def rng_seed_env():
+    """
+    Read the rng seed from the Schutzfile and return it as a map to use as an environment variable with the appropriate
+    key.
+    """
+
+    with open(SCHUTZFILE, encoding="utf-8") as schutzfile:
+        data = json.load(schutzfile)
+    return {"OSBUILD_RNG_SEED": int(data["rngseed"])}

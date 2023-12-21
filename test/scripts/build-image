@@ -30,7 +30,10 @@ def main():
 
     testlib.runcmd(["go", "build", "-o", "./bin/build", "./cmd/build"])
     cmd = ["sudo", "./bin/build", "-output", "./build", "-distro", distro, "-image", image_type, "-config", config_path]
-    job = sp.run(cmd, capture_output=False)  # print live output
+
+    env = os.environ
+    env.update(testlib.rng_seed_env())
+    job = sp.run(cmd, capture_output=False, env=env)  # print live output
     if job.returncode > 0:
         print(f"❌ Build failed: {cmd}")
         sys.exit(job.returncode)
