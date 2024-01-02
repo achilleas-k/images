@@ -4,10 +4,7 @@ package cmdutil
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/osbuild/images/pkg/blueprint"
 	"github.com/osbuild/images/pkg/ostree"
@@ -32,40 +29,6 @@ func FilterRepos(repos []rpmmd.RepoConfig, typeName string) []rpmmd.RepoConfig {
 		}
 	}
 	return filtered
-}
-
-type DistroArchRepoMap map[string]map[string][]rpmmd.RepoConfig
-
-func LoadRepoMap() DistroArchRepoMap {
-	reposDir := "./test/data/repositories/"
-	darm := make(DistroArchRepoMap)
-	filelist, err := os.ReadDir(reposDir)
-	if err != nil {
-		panic(err)
-	}
-	for _, file := range filelist {
-		filename := file.Name()
-		if !strings.HasSuffix(filename, ".json") {
-			continue
-		}
-		reposFilepath := filepath.Join(reposDir, filename)
-		fp, err := os.Open(reposFilepath)
-		if err != nil {
-			panic(err)
-		}
-		defer fp.Close()
-		data, err := io.ReadAll(fp)
-		if err != nil {
-			panic(err)
-		}
-		repos := make(map[string][]rpmmd.RepoConfig)
-		if err := json.Unmarshal(data, &repos); err != nil {
-			panic(err)
-		}
-		distro := strings.TrimSuffix(filename, filepath.Ext(filename))
-		darm[distro] = repos
-	}
-	return darm
 }
 
 type BuildConfig struct {
