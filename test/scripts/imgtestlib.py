@@ -201,12 +201,17 @@ def check_config_names():
 
 
 def gen_manifests(outputdir, config_map=None, distros=None, arches=None, images=None,
-                  commits=False, skip_no_config=False):
+                  packages=True, containers=True, commits=False, metadata=True,
+                  skip_no_config=False):
     # pylint: disable=too-many-arguments
     cmd = ["go", "run", "./cmd/gen-manifests",
            "--cache", os.path.join(TEST_CACHE_ROOT, "rpmmd"),
            "--output", outputdir,
-           "--workers", "100"]
+           "--workers", "100",
+           f"--packages={packages}",
+           f"--containers={containers}",
+           f"--commits={commits}",
+           f"--metadata={metadata}"]
     if config_map:
         cmd.extend(["--config-map", config_map])
     if distros:
@@ -215,10 +220,9 @@ def gen_manifests(outputdir, config_map=None, distros=None, arches=None, images=
         cmd.extend(["--arches", ",".join(arches)])
     if images:
         cmd.extend(["--images", ",".join(images)])
-    if commits:
-        cmd.append("--commits")
     if skip_no_config:
         cmd.append("--skip-noconfig")
+
     print("⌨️" + " ".join(cmd))
     _, stderr = runcmd(cmd, extra_env=rng_seed_env())
     return stderr
