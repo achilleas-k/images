@@ -3,7 +3,6 @@
     "distros": [
       "rhel-9*",
       "rhel-8*",
-      "centos*",
       "fedora*"
     ],
     "image-types": [
@@ -20,7 +19,8 @@
       "fedora*"
     ],
     "image-types": [
-      "qcow2"
+      "qcow2",
+      "oci"
     ]
   },
   "./configs/all-with-oscap.json": {
@@ -40,9 +40,11 @@
   },
   "./configs/disable-lm_sensors.json": {
     "distros": [
-      "rhel-8.4"
+      "rhel-8.4",
+      "fedora-*"
     ],
     "image-types": [
+      "qcow2",
       "ec2-sap"
     ]
   },

@@ -4,7 +4,7 @@
     "customizations": {
       "services": {
         "disabled": [
-          "lm_sensors.service"
+          "lm_sensorsa.service"
         ]
       }
     }
