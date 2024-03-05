@@ -228,10 +228,10 @@ def gen_manifests(outputdir, config_map=None, distros=None, arches=None, images=
     return stderr
 
 
-def read_manifests(path):
+def read_manifests(path, compute_ids=True):
     """
-    Read all manifests in the given path, calculate their IDs, and return a dictionary mapping each filename to the data
-    and its ID.
+    Read all manifests in the given path, optionally compute their IDs, and return a dictionary mapping each filename
+    to the data and its ID.
     """
     print(f"📖 Reading manifests in {path}")
     manifests = {}
@@ -241,8 +241,9 @@ def read_manifests(path):
             manifest_data = json.load(manifest_file)
         manifests[manifest_fname] = {
             "data": manifest_data,
-            "id": get_manifest_id(manifest_data["manifest"]),
         }
+        if compute_ids:
+            manifests[manifest_fname]["id"] = get_manifest_id(manifest_data["manifest"])
     print("✅ Done")
     return manifests
 
