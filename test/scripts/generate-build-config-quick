@@ -1,0 +1,153 @@
+#!/usr/bin/env python3
+#
+# Generate a JSON file that lists the test configurations that should be run in GitLab along with the reason for each.
+import json
+import os
+from contextlib import contextmanager
+from tempfile import NamedTemporaryFile, TemporaryDirectory
+
+import imgtestlib as testlib
+
+PUSH_CONTAINER = "./tools/ci/push-container.sh"
+
+
+def generate_manifests(outputdir):
+    """
+    Generate all manifest using the default config map but with no content and return a dictionary mapping each manifest
+    file to the manifest data and its ID.
+    """
+    print("🗒️ Generating no-content manifests using the default config map")
+    err = testlib.gen_manifests(outputdir, packages=False, containers=False, commits=False, metadata=True)
+
+    # print stderr in case there were errors or warnings about skipped configurations
+    # but filter out the annoying ones
+    stderr = err.decode().splitlines()
+    for line in stderr:
+        print(line)
+
+    print("✅ Manifest generation done!\n")
+    return testlib.read_manifests(outputdir, compute_ids=False)
+
+
+def invert_dict(md):
+    """
+    Invert a k->v dictionary into v->k.
+    """
+    new = {}
+    for k, v in md.items():
+        new[str(v)] = k
+    print("inverted")
+    print(f"{len(md)} -> {len(new)}")
+    return new
+
+
+def manifest_dict_diff(a, b):
+    """
+    Given two manifest dictionaries mapping filename->manifest, return three sets of filenames:
+    Modified: manifest filenames that differ in content between a and b.
+    Added: manifest filenames that appear in b but not a.
+    Removed: manifest filenames that appear in a but not b.
+
+    The function assumes that the mappings are one-to-one. Files with identical content will be removed in the process.
+    The metadata for manifests is ignored. Only the manifests themselves are used in the content comparison.
+    """
+    # extract manifest from each item
+    a_man = {k: v["data"]["manifest"] for k, v in a.items()}
+    b_man = {k: v["data"]["manifest"] for k, v in b.items()}
+
+    # invert the dictionaries so we can address them by content
+    a_inv = invert_dict(a_man)
+    b_inv = invert_dict(b_man)
+
+    # manifests in a that aren't in b
+    removed = set(a_inv) - set(b_inv)
+    removed_names = set(a_inv[v] for v in removed)
+
+    # manifests in b that aren't in a
+    added = set(b_inv) - set(a_inv)
+    added_names = set(b_inv[v] for v in added)
+
+    # names that appear in both added and removed are modified
+    modified_names = added_names & removed_names
+
+    # removed modified names from the added and removed sets
+    added_names -= modified_names
+    removed_names -= modified_names
+
+    return modified_names, added_names, removed_names
+
+
+@contextmanager
+def git_worktree_ctx(commit):
+    """
+    Git worktree and working directory context manager.
+
+    Creates a worktree from a commit, changes the working directory into it, and cleans up on exit, reverting the
+    working directory and removing the worktree.
+    """
+    cur_dir = os.getcwd()
+    with TemporaryDirectory() as worktree_dir:
+        print(f"Creating worktree for {commit} at {worktree_dir}")
+        testlib.runcmd_nc(["git", "worktree", "add", worktree_dir, commit])
+        os.chdir(worktree_dir)
+        try:
+            yield
+        finally:
+            os.chdir(cur_dir)
+            testlib.runcmd_nc(["git", "worktree", "remove", worktree_dir])
+
+
+def main():
+    testlib.check_config_names()
+
+    with TemporaryDirectory() as manifest_dir:
+        # Generate head manifests without content
+        manifests_pr = generate_manifests(os.path.join(manifest_dir, "head"))
+
+        # Find the merge-base with origin/main to generate manifests and check for changes
+        merge_base, _ = testlib.runcmd(["git", "merge-base", "origin/main", "HEAD"])
+        merge_base = merge_base.decode().strip()
+        # Use a worktree in the temporary directory so we don't affect the PR head working directory
+        with git_worktree_ctx(merge_base):
+            manifests_main = generate_manifests(os.path.join(manifest_dir, "merge-base"))
+
+    modified_names, added_names, removed_names = manifest_dict_diff(manifests_main, manifests_pr)
+
+    # collect configurations for new builds
+    new_builds = []
+
+    print(f"{len(modified_names)} modified")
+    for idx, name in enumerate(modified_names):
+        print(f"{idx:4d}: {name}")
+        br = manifests_pr[name]["data"]["build-request"]
+        new_builds.append({
+            "distro": br["distro"],
+            "arch": br["arch"],
+            "image-type": br["image-type"],
+            "config": br["config"]["name"],
+        })
+
+    print(f"{len(removed_names)} removed")
+    for idx, name in enumerate(removed_names):
+        print(f"{idx:4d}: {name}")
+
+    print(f"{len(added_names)} added")
+    for idx, name in enumerate(added_names):
+        print(f"{idx:4d}: {name}")
+        br = manifests_pr[name]["data"]["build-request"]
+        new_builds.append({
+            "distro": br["distro"],
+            "arch": br["arch"],
+            "image-type": br["image-type"],
+            "config": br["config"]["name"],
+        })
+
+    # write configs and push them to S3 using the current commit ID as filename for gitlab CI to read
+    with NamedTemporaryFile(mode="w") as build_configs_file:
+        json.dump(new_builds, build_configs_file)
+        build_configs_file.flush()
+        testlib.upload_build_config(build_configs_file.name)
+
+
+if __name__ == "__main__":
+    main()
