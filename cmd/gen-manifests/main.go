@@ -608,7 +608,7 @@ func main() {
 					if skipNoconfig {
 						continue
 					}
-					panic(fmt.Sprintf("no configs defined for image type %q", imgTypeName))
+					panic(fmt.Sprintf("no configs defined for image type %s/%s/%s", distroName, archName, imgTypeName))
 				}
 
 				for _, itConfig := range imgTypeConfigs {
