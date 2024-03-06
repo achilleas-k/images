@@ -2,6 +2,7 @@
 #
 # Generates gitlab child pipelines for building images.
 # Each pipeline should build a single image configuration test.
+import json
 import os
 from tempfile import TemporaryDirectory
 
@@ -19,40 +20,11 @@ build/{distro}/{arch}/{image_type}/{config_name}:
     - ./test/scripts/build-image "{distro}" "{image_type}" "{config}"
     - ./test/scripts/boot-image "{distro}" "{arch}" "{image_type}" "{image_path}"
     - ./test/scripts/upload-results "{distro}" "{image_type}" "{config}"
-    {container_push}
   extends: .terraform
   variables:
     RUNNER: aws/fedora-39-{arch}
     INTERNAL_NETWORK: "{internal}"
 """
-
-
-def generate_manifests(outputdir, distro, arch):
-    """
-    Generate all manifest using the default config map and return a dictionary mapping each manifest file to the
-    manifest data and its ID.
-    """
-    target = arch
-    distros = None
-    if distro:
-        target = distro + "/" + arch
-        distros = [distro]
-
-    print(f"🗒️ Generating all manifests using the default config map for {target}")
-    err = testlib.gen_manifests(outputdir, arches=[arch], distros=distros)
-
-    # print stderr in case there were errors or warnings about skipped configurations
-    # but filter out the annoying ones
-    stderr = err.decode().splitlines()
-    for line in stderr:
-        if "No match for group package" in line:
-            continue
-        if "Failed to load consumer certs" in line:
-            continue
-        print(line)
-
-    print("✅ Manifest generation done!\n")
-    return testlib.read_manifests(outputdir)
 
 
 def generate_configs(build_requests, pipeline_file):
@@ -61,25 +33,15 @@ def generate_configs(build_requests, pipeline_file):
         distro = build["distro"]
         arch = build["arch"]
         image_type = build["image-type"]
-        config = build["config"]
-        man_checksum = build["manifest-checksum"]
-
-        config_name = config["name"]
+        config_name = build["config"]
+        # man_checksum = build["manifest-checksum"]
 
         build_name = testlib.gen_build_name(distro, arch, image_type, config_name)
         image_path = f"./build/{build_name}"
 
-        container_push_cmd = ""
-        if image_type in testlib.OSTREE_CONTAINERS:
-            # push to container registry and label with checksum
-            # NOTE: the artifact path and filename depend on the names in the manifest
-            container_path = f"./{image_path}/container/container.tar"
-            container_push_cmd = f'- {PUSH_CONTAINER} "{container_path}" "{build_name}:build-{man_checksum}"'
-
         config_path = os.path.join(testlib.CONFIGS_PATH, config_name+".json")
         pipeline_file.write(JOB_TEMPLATE.format(distro=distro, arch=arch, image_type=image_type,
                                                 config_name=config_name, config=config_path,
-                                                container_push=container_push_cmd,
                                                 internal="true" if "rhel" in distro else "false",
                                                 image_path=image_path))
     print("✅ DONE!")
@@ -90,14 +52,12 @@ def main():
     args = parser.parse_args()
 
     config_path = args.config
-    distro = args.distro
-    arch = args.arch
-
     testlib.check_config_names()
 
-    with TemporaryDirectory() as manifest_dir:
-        manifests = generate_manifests(manifest_dir, distro, arch)
-        build_requests = testlib.filter_builds(manifests, distro=distro, arch=arch)
+    build_configs_path = "build-configurations.json"
+    testlib.download_build_config(build_configs_path)
+    with open(build_configs_path, encoding="utf-8") as build_configs_file:
+        build_requests = json.load(build_configs_file)
 
     with open(config_path, "w", encoding="utf-8") as config_file:
         if len(build_requests) == 0:
