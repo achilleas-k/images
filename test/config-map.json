@@ -179,6 +179,11 @@
       "iot-ami"
     ]
   },
+  "./configs/iot-ostree-pull-user-minimal.json": {
+    "image-types": [
+      "iot-ami"
+    ]
+  },
   "./configs/kernel-debug.json": {
     "image-types": [
       "iot-commit"
@@ -189,7 +194,8 @@
       "fedora*"
     ],
     "image-types": [
-      "qcow2"
+      "qcow2",
+      "iot-container"
     ]
   },
   "./configs/minimal.json": {
