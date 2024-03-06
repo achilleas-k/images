@@ -495,3 +495,21 @@ def skopeo_inspect_id(image_name: str, arch: str) -> str:
 
     # don't error out, just return an empty string and let the caller handle it
     return ""
+
+
+def upload_build_config(path):
+    head_commit, _ = runcmd(["git", "rev-parse", "HEAD"])
+    head_commit = head_commit.decode().strip()
+    s3url = f"{S3_BUCKET}/images/ci-build-configs/{head_commit}.json"
+    print(f"⬆️ Uploading CI build configuration to {s3url}")
+    runcmd(["aws", "s3", "cp", "--acl=private", path, s3url])
+    print("✅ DONE!!")
+
+
+def download_build_config(path):
+    head_commit, _ = runcmd(["git", "rev-parse", "HEAD"])
+    head_commit = head_commit.decode().strip()
+    s3url = f"{S3_BUCKET}/images/ci-build-configs/{head_commit}.json"
+    print(f"⬇ Downloading CI build configuration to {s3url}")
+    runcmd(["aws", "s3", "cp", "--acl=private", s3url, path])
+    print("✅ DONE!!")
