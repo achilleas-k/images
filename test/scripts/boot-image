@@ -103,6 +103,37 @@ def boot_ami(distro, arch, image_type, image_path):
             cmd_boot_aws(arch, image_name, privkey, pubkey, raw_image_path)
 
 
+def boot_qemu(arch, image_path):
+    with ensure_qcow2(image_path) as qcow2path:
+        with create_ssh_key() as (privkey, pubkey):
+            cmd = [
+                f"qemu-system-{arch}"
+                "-m", "2G",
+                "-device", "virtio-net-pci,netdev=n0,mac=FE:0B:6E:23:3D:44",
+                "-netdev user,id=n0,net=10.0.2.0/24,hostfwd=tcp::2222-:22"
+                "-drive", f"file={qcow2path}"
+                "-snapshot",
+                "-nographic",
+            ]
+            match arch:
+                case "aarch64":
+                    cmd.extend([
+                        "-machine", "virt",
+                        "-cpu", "host",
+                        "-smp", "2",
+                        "-bios", "/usr/share/AAVMF/AAVMF_CODE.fd",
+                    ])
+                case "x86_64":
+                    cmd.extend([
+                        "qemu-system-x86_64",
+                        "-M", "accel=kvm",
+                        "-cpu", "host",
+                        "-build", "/usr/share/OVMF/OVMF_CODE.fd",  # Fedora
+                    ])
+                case _:
+                    raise ValueError(f"unsupported architecture {arch}")
+
+
 def boot_container(distro, arch, image_type, image_path, manifest_id):
     """
     Use bootc-image-builder to build an AMI and boot it.
