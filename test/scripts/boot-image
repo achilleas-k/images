@@ -61,6 +61,24 @@ def ensure_uncompressed(filepath):
         yield filepath
 
 
+@contextlib.contextmanager
+def ensure_qcow2(filepath):
+    """
+    If the file at the given path is raw (or compressed-raw), convert it to qcow2 yield the new file path.
+    """
+    with ensure_uncompressed(filepath) as uncompressed:
+        base, ext = os.path.splitext(uncompressed)
+        if ext != ".qcow2":
+            qcow2path = f"{base}.qcow2"
+            print(f"Converting {filepath}")
+            testlib.runcmd_nc(["qemu-img", "convert", "-O", "qcow2", filepath, qcow2path])
+            yield qcow2path
+            # if converted, cleanup when done so the file doesn't get uploaded to the build cache
+            os.unlink(qcow2path)
+        else:
+            yield filepath
+
+
 def cmd_boot_aws(arch, image_name, privkey, pubkey, image_path):
     aws_config = get_aws_config()
     cmd = ["go", "run", "./cmd/boot-aws", "run",
