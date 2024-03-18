@@ -144,32 +144,35 @@ def boot_ami(distro, arch, image_type, image_path):
 def boot_qemu(arch, image_path):
     with ensure_qcow2(image_path) as qcow2path:
         with create_ssh_key() as (privkey, pubkey):
-            cmd = [
-                f"qemu-system-{arch}"
-                "-m", "2G",
-                "-device", "virtio-net-pci,netdev=n0,mac=FE:0B:6E:23:3D:44",
-                "-netdev user,id=n0,net=10.0.2.0/24,hostfwd=tcp::2222-:22"
-                "-drive", f"file={qcow2path}"
-                "-snapshot",
-                "-nographic",
-            ]
-            match arch:
-                case "aarch64":
-                    cmd.extend([
-                        "-machine", "virt",
-                        "-cpu", "host",
-                        "-smp", "2",
-                        "-bios", "/usr/share/AAVMF/AAVMF_CODE.fd",
-                    ])
-                case "x86_64":
-                    cmd.extend([
-                        "qemu-system-x86_64",
-                        "-M", "accel=kvm",
-                        "-cpu", "host",
-                        "-build", "/usr/share/OVMF/OVMF_CODE.fd",  # Fedora
-                    ])
-                case _:
-                    raise ValueError(f"unsupported architecture {arch}")
+            with create_cloudinit(pubkey) as cloud_init:
+                cmd = [
+                    f"qemu-system-{arch}",
+                    "-m", "2G",
+                    "-device", "virtio-net-pci,netdev=n0,mac=FE:0B:6E:23:3D:44",
+                    "-netdev", "user,id=n0,net=10.0.2.0/24,hostfwd=tcp::2222-:22",
+                    "-drive", f"file={qcow2path}",
+                    "-snapshot",
+                    "-nographic",
+                    "-cdrom", cloud_init,
+                ]
+                match arch:
+                    case "aarch64":
+                        cmd.extend([
+                            "-machine", "virt",
+                            "-cpu", "host",
+                            "-smp", "2",
+                            "-bios", "/usr/share/AAVMF/AAVMF_CODE.fd",
+                        ])
+                    case "x86_64":
+                        cmd.extend([
+                            "-M", "accel=kvm",
+                            "-cpu", "host",
+                            "-bios", "/usr/share/edk2-ovmf/x64/OVMF.fd",
+                        ])
+                    case _:
+                        raise ValueError(f"unsupported architecture {arch}")
+                print(" ".join(cmd))
+                testlib.runcmd_nc(cmd)
 
 
 def boot_container(distro, arch, image_type, image_path, manifest_id):
@@ -275,6 +278,8 @@ def main():
     match image_type:
         case "ami" | "ec2" | "ec2-ha" | "ec2-sap" | "edge-ami":
             boot_ami(distro, arch, image_type, image_path)
+        case "qcow2":
+            boot_qemu(arch, image_path)
         case "iot-bootable-container":
             info_file_path = os.path.join(search_path, "info.json")
             with open(info_file_path, encoding="utf-8") as info_fp:
