@@ -6,6 +6,8 @@ import os
 import uuid
 from tempfile import TemporaryDirectory
 
+import yaml
+
 import imgtestlib as testlib
 
 
@@ -16,6 +18,42 @@ def get_aws_config():
         "bucket": os.environ.get("AWS_BUCKET"),
         "region": os.environ.get("AWS_REGION")
     }
+
+
+@contextlib.contextmanager
+def create_cloudinit(pubkey_file):
+    with open(pubkey_file, encoding="utf-8") as pubkey_fp:
+        pubkey = pubkey_fp.read()
+    data = {
+        "users": [
+            {
+                "name": "root",
+                "ssh_authorized_keys": [pubkey],
+            }
+        ]
+    }
+    with TemporaryDirectory() as tmpdir:
+        user_data_path = os.path.join(tmpdir, "user-data")
+        with open(user_data_path, "w", encoding="utf-8") as user_data_fp:
+            user_data_fp.write("#cloud-config\n")
+            yaml.dump(data, user_data_fp)
+
+        meta_data_path = os.path.join(tmpdir, "meta-data")
+        with open(meta_data_path, "w", encoding="utf-8") as meta_data_fp:
+            yaml.dump({"instance-id": "nocloud"}, meta_data_fp)
+
+        cloudinit_iso_path = os.path.join(tmpdir, "cloud-init.iso")
+        cmd = [
+            "genisoimage",
+            "-input-charset", "utf-8",
+            "-output", cloudinit_iso_path,
+            "-volid", "cidata",
+            "-joliet", "-rock",
+            user_data_path, meta_data_path
+        ]
+        print(" ".join(cmd))
+        testlib.runcmd_nc(cmd)
+        yield cloudinit_iso_path
 
 
 @contextlib.contextmanager
