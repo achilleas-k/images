@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 #
 # Generate a JSON file that lists the test configurations that should be run in GitLab along with the reason for each.
+import fnmatch
 import json
 import os
+import shutil
 from contextlib import contextmanager
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 
@@ -11,13 +13,73 @@ import imgtestlib as testlib
 PUSH_CONTAINER = "./tools/ci/push-container.sh"
 
 
+def read_config_map():
+    with open(testlib.CONFIG_MAP, "r", encoding="utf-8") as config_map_file:
+        return json.load(config_map_file)
+
+
+def matches(name: str, filters: list[str]) -> bool:
+    return any(fnmatch.fnmatch(name, i) for i in filters)
+
+
+def expand_config_map():
+    """
+    Expand config map creating a single config for each config-distro-arch-imagetype combination in a tree as:
+
+        <distro>/<arch>/<image-type>/<config-name>.json
+
+    and return the path to a config map that lists these.
+    """
+    images = testlib.list_images()
+    map_dir = os.path.dirname(testlib.CONFIG_MAP)
+    expanded_map = {}
+    for config_path, filters in read_config_map().items():
+        for image in images:
+            distro = image["distro"]
+            arch = image["arch"]
+            image_type = image["image-type"]
+            if image_type not in filters["image-types"]:
+                continue
+            # filter on distro and arch
+            distro_filters = filters.get("distros", [])
+            if distro_filters and distro and not matches(distro, distro_filters):
+                continue
+            arch_filters = filters.get("arches", [])
+            if arch_filters and arch and not matches(arch, arch_filters):
+                continue
+
+            # paths in config map are relative to the map's directory
+            config_fname = os.path.basename(config_path)
+            real_config_path = os.path.join(map_dir, config_path)
+
+            dai_path = os.path.join("test/configs/expanded", distro, arch, image_type)
+            os.makedirs(dai_path, exist_ok=True)
+
+            # make paths absolute so it's easier to work with
+            new_config_path = os.path.abspath(os.path.join(dai_path, config_fname))
+            shutil.copyfile(real_config_path, new_config_path)
+            expanded_map[new_config_path] = {
+                "distros": [distro],
+                "arches": [arch],
+                "image-types": [image_type],
+            }
+
+    expanded_map_path = "expanded-config-map.json"
+    with open(expanded_map_path, mode="w", encoding="utf-8") as expmap_fp:
+        json.dump(expanded_map, expmap_fp, indent=2)
+
+    return expanded_map_path
+
+
 def generate_manifests(outputdir):
     """
     Generate all manifest using the default config map but with no content and return a dictionary mapping each manifest
     file to the manifest data and its ID.
     """
+    expanded_map_path = expand_config_map()
     print("🗒️ Generating no-content manifests using the default config map")
-    err = testlib.gen_manifests(outputdir, packages=False, containers=False, commits=False, metadata=True)
+    err = testlib.gen_manifests(outputdir, packages=False, containers=False, commits=False, metadata=True,
+                                config_map=expanded_map_path)
 
     # print stderr in case there were errors or warnings about skipped configurations
     # but filter out the annoying ones
@@ -94,7 +156,8 @@ def git_worktree_ctx(commit):
             yield
         finally:
             os.chdir(cur_dir)
-            testlib.runcmd_nc(["git", "worktree", "remove", worktree_dir])
+            # force remove since we'll have changes in the worktree
+            testlib.runcmd_nc(["git", "worktree", "remove", "--force", worktree_dir])
 
 
 def main():
