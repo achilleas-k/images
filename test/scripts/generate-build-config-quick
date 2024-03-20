@@ -2,6 +2,7 @@
 #
 # Generate a JSON file that lists the test configurations that should be run in GitLab along with the reason for each.
 import fnmatch
+import hashlib
 import json
 import os
 import shutil
@@ -11,6 +12,9 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory
 import imgtestlib as testlib
 
 PUSH_CONTAINER = "./tools/ci/push-container.sh"
+
+ARCHITECTURES = ["x86_64", "aarch64"]
+MANIFEST_ONLY_ARCHES = ["ppc64le", "s390x"]
 
 
 def read_config_map():
@@ -68,24 +72,58 @@ def expand_config_map():
     with open(expanded_map_path, mode="w", encoding="utf-8") as expmap_fp:
         json.dump(expanded_map, expmap_fp, indent=2)
 
-    return expanded_map_path
+    return expanded_map_path, expanded_map
 
 
 def generate_manifests(outputdir):
     """
     Generate all manifest using the default config map but with no content and return a dictionary mapping each manifest
     file to the manifest data and its ID.
+
+    Before generating manifests, the config-map is expanded, which means that for each distro-arch-imagetype-config
+    combination, a separate configuration file is created. This expanded tree is used to add unique ostree source
+    options to configurations with dependencies, such as ostree disk images and installers.  The modified configurations
+    are used in a second pass of the manifest generation so that configurations with dependencies are also considered
+    modified when a dependency changes.
     """
-    expanded_map_path = expand_config_map()
-    print("🗒️ Generating no-content manifests using the default config map")
+    expanded_map_path, expanded_map = expand_config_map()
+    print("🗒️ Generating no-content manifests using the expanded config map")
     err = testlib.gen_manifests(outputdir, packages=False, containers=False, commits=False, metadata=True,
                                 config_map=expanded_map_path)
 
-    # print stderr in case there were errors or warnings about skipped configurations
-    # but filter out the annoying ones
     stderr = err.decode().splitlines()
     for line in stderr:
         print(line)
+
+    # Modify the URL in osbuild dependencies to add the hash of the manifest that an ostree image depends on and
+    # regenerate the manifests. This lets us know if ostree-dependent manifests, like edge-ami, need to be rebuilt when
+    # the image definition doesn't change but its dependency, edge-container, does.
+    print("🔄 Adding dependency manifest ID to ostree URL")
+    for config_path, filters in expanded_map.items():
+        # paths are absolute
+        with open(config_path, encoding="utf-8") as config_fp:
+            config = json.load(config_fp)
+        if not (depends := config.get("depends")):
+            continue
+
+        dep_config_name = depends["config"]
+        dep_image_type = depends["image-type"]
+
+        distro = filters["distros"][0]
+        arch = filters["arches"][0]
+
+        dep_manifest_path = os.path.join(outputdir,
+                                         testlib.gen_build_name(distro, arch, dep_image_type, dep_config_name))
+        with open(dep_manifest_path, encoding="utf-8") as dep_manifest_fp:
+            checksum = hashlib.sha256(dep_manifest_fp.read().encode()).hexdigest()
+
+        config["ostree"]["url"] += "/" + checksum
+        with open(config_path, mode="w", encoding="utf-8") as config_fp:
+            json.dump(config, config_fp)
+
+    print("🗒️ Generating no-content manifests using the expanded config map (with modified ostree URLs)")
+    err = testlib.gen_manifests(outputdir, packages=False, containers=False, commits=False, metadata=True,
+                                config_map=expanded_map_path)
 
     print("✅ Manifest generation done!\n")
     return testlib.read_manifests(outputdir, compute_ids=False)
