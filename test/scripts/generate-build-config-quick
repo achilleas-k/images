@@ -17,6 +17,28 @@ ARCHITECTURES = ["x86_64", "aarch64"]
 MANIFEST_ONLY_ARCHES = ["ppc64le", "s390x"]
 
 
+def make_ci_job(distro, arch, image_type, config_name, config_path):
+    build_name = testlib.gen_build_name(distro, arch, image_type, config_name)
+    image_path = f"./build/{build_name}"
+    return {
+        f"build/{distro}/{arch}/{image_type}/{config_name}": {
+            "stage": "test",
+            "script": [
+                "sudo ./test/scripts/setup-osbuild-repo",
+                "sudo ./test/scripts/install-dependencies",
+                f"./test/scripts/build-image {distro} {image_type} {config_path}"
+                f"./test/scripts/boot-image {distro} {arch} {image_type} '{image_path}'"
+                f"./test/scripts/upload-results {distro} {arch} {image_type} {config_path}"
+            ],
+            "extends": ".terraform",
+            "variables": {
+                "RUNNER": f"aws/fedora-39-{arch}",
+                "INTERNAL_NETWORK": "rhel" in distro,
+            }
+        }
+    }
+
+
 def read_config_map():
     with open(testlib.CONFIG_MAP, "r", encoding="utf-8") as config_map_file:
         return json.load(config_map_file)
@@ -196,6 +218,10 @@ def git_worktree_ctx(commit):
             os.chdir(cur_dir)
             # force remove since we'll have changes in the worktree
             testlib.runcmd_nc(["git", "worktree", "remove", "--force", worktree_dir])
+
+
+def generate_gitlab_ci(configs):
+    pass
 
 
 def main():
