@@ -40,23 +40,21 @@ BIB_TYPES = [
 
 # base and terraform bits copied from main .gitlab-ci.yml
 # needed for status reporting and defining the runners
-BASE_CONFIG = """
-.base:
-  before_script:
-    - cat schutzbot/team_ssh_keys.txt |
-        tee -a ~/.ssh/authorized_keys > /dev/null
-  interruptible: true
-  retry: 1
-  tags:
-    - terraform
-  variables:
-    PYTHONUNBUFFERED: 1
-
-.terraform:
-  extends: .base
-  tags:
-    - terraform
-"""
+def base_config():
+    return {
+        ".base": {
+            "before_script": [
+                "cp -v schutzbot/team_ssh_keys.txt ~/.ssh/authorized_keys",
+                "chmod 600 ~/.ssh/authorized_keys",
+            ],
+            "interruptible": True,
+            "retry": 1,
+            "tags": ["terraform"],
+            "variables": {
+                "PYTHONUNBUFFERED": 1,
+            },
+        },
+    }
 
 NULL_CONFIG = """
 NullBuild:

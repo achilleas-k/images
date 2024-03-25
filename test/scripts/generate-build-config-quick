@@ -9,6 +9,8 @@ import shutil
 from contextlib import contextmanager
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 
+import yaml
+
 import imgtestlib as testlib
 
 PUSH_CONTAINER = "./tools/ci/push-container.sh"
@@ -17,26 +19,44 @@ ARCHITECTURES = ["x86_64", "aarch64"]
 MANIFEST_ONLY_ARCHES = ["ppc64le", "s390x"]
 
 
-def make_ci_job(distro, arch, image_type, config_name, config_path):
+def make_ci_job(distro, arch, image_type, config_name):
     build_name = testlib.gen_build_name(distro, arch, image_type, config_name)
-    image_path = f"./build/{build_name}"
-    return {
-        f"build/{distro}/{arch}/{image_type}/{config_name}": {
+    image_path = f"build/{build_name}"
+    config_path = f"test/configs/{config_name}.json"
+    job_name = f"build/{distro}/{arch}/{image_type}/{config_name}"
+    job = {
+        job_name: {
             "stage": "test",
             "script": [
                 "sudo ./test/scripts/setup-osbuild-repo",
                 "sudo ./test/scripts/install-dependencies",
-                f"./test/scripts/build-image {distro} {image_type} {config_path}"
-                f"./test/scripts/boot-image {distro} {arch} {image_type} '{image_path}'"
-                f"./test/scripts/upload-results {distro} {arch} {image_type} {config_path}"
+                f"./test/scripts/build-image {distro} {image_type} '{config_path}'",
+                f"./test/scripts/boot-image {distro} {arch} {image_type} '{image_path}'",
+                f"./test/scripts/upload-results {distro} {arch} {image_type} '{config_path}'",
             ],
-            "extends": ".terraform",
+            "extends": ".base",
             "variables": {
                 "RUNNER": f"aws/fedora-39-{arch}",
                 "INTERNAL_NETWORK": "rhel" in distro,
             }
         }
     }
+    if image_type in testlib.OSTREE_CONTAINERS:
+        # push to container registry and label with checksum
+        # NOTE: the artifact path and filename depend on the names in the manifest
+        container_path = f"{image_path}/container/container.tar"
+        job[job_name]["script"].append(f"{PUSH_CONTAINER} '{container_path}'")
+    return job
+
+
+def generate_gitlab_ci(configs):
+    ci_config = testlib.base_config()
+    for cfg in configs:
+        build_job = make_ci_job(cfg["distro"], cfg["arch"], cfg["image-type"], cfg["config"])
+        ci_config.update(build_job)
+
+    with open("ci.yml", mode="w", encoding="utf-8") as ci_yml:
+        yaml.dump(ci_config, ci_yml, explicit_start=True)
 
 
 def read_config_map():
@@ -220,10 +240,6 @@ def git_worktree_ctx(commit):
             testlib.runcmd_nc(["git", "worktree", "remove", "--force", worktree_dir])
 
 
-def generate_gitlab_ci(configs):
-    pass
-
-
 def main():
     testlib.check_config_names()
 
@@ -269,11 +285,12 @@ def main():
             "config": br["config"]["name"],
         })
 
+    generate_gitlab_ci(new_builds)
     # write configs and push them to S3 using the current commit ID as filename for gitlab CI to read
-    with NamedTemporaryFile(mode="w") as build_configs_file:
-        json.dump(new_builds, build_configs_file)
-        build_configs_file.flush()
-        testlib.upload_build_config(build_configs_file.name)
+    # with NamedTemporaryFile(mode="w") as build_configs_file:
+    #     json.dump(new_builds, build_configs_file)
+    #     build_configs_file.flush()
+    #     testlib.upload_build_config(build_configs_file.name)
 
 
 if __name__ == "__main__":

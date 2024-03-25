@@ -65,7 +65,7 @@ def main():
             config_file.write(testlib.NULL_CONFIG)
             return
 
-        config_file.write(testlib.BASE_CONFIG)
+        config_file.write(testlib.base_config())
         generate_configs(build_requests, config_file)
 
 
