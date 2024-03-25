@@ -10,6 +10,6 @@
   },
   "depends": {
     "image-type": "iot-container",
-    "config": "empty.json"
+    "config": "minimal-pkgs.json"
   }
 }
