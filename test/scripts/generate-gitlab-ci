@@ -14,7 +14,6 @@ stages:
   - init
   - gen
   - build
-  - ostree-gen
   - ostree-build
   - verify
   - finish
@@ -87,25 +86,6 @@ image-build-trigger-{distro}-{arch}:
     - generate-build-config-{distro}-{arch}
 """
 
-OSTREE_GEN_TEMPLATE = """
-generate-ostree-build-config-{distro}-{arch}:
-  stage: ostree-gen
-  extends: .terraform
-  variables:
-    RUNNER: aws/fedora-39-{arch}
-    INTERNAL_NETWORK: "true"
-  script:
-    - sudo ./test/scripts/setup-osbuild-repo
-    - sudo ./test/scripts/install-dependencies
-    - ./test/scripts/generate-ostree-build-config --distro {distro} --arch {arch} build-config.yml build-configs
-  artifacts:
-    paths:
-      - build-config.yml
-      - build-configs
-  needs:
-    - image-build-trigger-{distro}-{arch}
-"""
-
 OSTREE_TRIGGER_TEMPLATE = """
 image-build-ostree-trigger-{distro}-{arch}:
   stage: ostree-build
@@ -153,7 +133,6 @@ def main():
 
     gen_stage = []
     trigger_stage = []
-    ostree_gen_stage = []
     ostree_trigger_stage = []
     for img in sort_configs(images):
         combo = (img["distro"], img["arch"])
@@ -163,7 +142,6 @@ def main():
         combos.add(combo)
         gen_stage.append(GEN_TEMPLATE.format(distro=img["distro"], arch=img["arch"], cache=cache))
         trigger_stage.append(TRIGGER_TEMPLATE.format(distro=img["distro"], arch=img["arch"], cache=cache))
-        ostree_gen_stage.append(OSTREE_GEN_TEMPLATE.format(distro=img["distro"], arch=img["arch"], cache=cache))
         ostree_trigger_stage.append(OSTREE_TRIGGER_TEMPLATE.format(distro=img["distro"], arch=img["arch"], cache=cache))
 
     man_only_images = testlib.list_images(arches=MANIFEST_ONLY_ARCHES)
@@ -181,7 +159,6 @@ def main():
         config_file.write(testlib.BASE_CONFIG)
         config_file.write("\n".join(gen_stage))
         config_file.write("\n".join(trigger_stage))
-        config_file.write("\n".join(ostree_gen_stage))
         config_file.write("\n".join(ostree_trigger_stage))
         config_file.write("\n".join(man_gen_stage))
 
