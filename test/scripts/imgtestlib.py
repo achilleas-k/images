@@ -307,6 +307,7 @@ def filter_builds(manifests, distro=None, arch=None, skip_ostree_pull=True):
     dl_path = os.path.join(TEST_CACHE_ROOT, "s3configs", f"builds/{distro}/{arch}/")
     os.makedirs(dl_path, exist_ok=True)
     build_requests = []
+    build_req_tuples = set()  # a simple set of tuples for quick lookup of build requests
 
     out, dl_ok = dl_build_info(dl_path, distro=distro, arch=arch)
     # continue even if the dl failed; will build all configs
@@ -327,9 +328,9 @@ def filter_builds(manifests, distro=None, arch=None, skip_ostree_pull=True):
         config = build_request["config"]
         config_name = config["name"]
 
-        # check if the config specifies an ostree URL and skip it if requested
-        if skip_ostree_pull and config.get("ostree", {}).get("url"):
-            print(f"🦘 Skipping {distro}/{arch}/{image_type}/{config_name} (ostree dependency)")
+        if config.get("depends", {}).get("image-type"):
+            # Check if the config specifies a dependency and skip it for now.
+            # It will be checked later.
             continue
 
         # add manifest id to build request
@@ -340,6 +341,31 @@ def filter_builds(manifests, distro=None, arch=None, skip_ostree_pull=True):
 
         if check_for_build(manifest_fname, build_info_path, errors):
             build_requests.append(build_request)
+            build_req_tuples.add((distro, arch, image_type, config_name))
+
+    # run through the manifests again and check, for each config that has a dependency, if the dependency is in the
+    # build_requests, add the dependent as well
+    for manifest_fname, data in manifests.items():
+        manifest_id = data["id"]
+        data = data.get("data")
+        build_request = data["build-request"]
+        distro = build_request["distro"]
+        arch = build_request["arch"]
+        image_type = build_request["image-type"]
+        config = build_request["config"]
+        config_name = config["name"]
+
+        if config.get("depends", {}).get("image-type"):
+            depends = config["depends"]
+            # check if the dependency is in the build_req_tuples
+            dep_image_type = depends["image-type"]
+            dep_config, _ = os.path.splitext(depends["config"])
+            if (distro, arch, dep_image_type, dep_config) in build_req_tuples:
+                dep_build_name = gen_build_name(distro, arch, dep_image_type, dep_config)
+                print(f"🖼️ Manifest {manifest_fname} depends on {dep_build_name} which is being built in this pipeline")
+                print("  Adding config to build pipeline.")
+                build_request["manifest-checksum"] = manifest_id
+                build_requests.append(build_request)
 
     print("✅ Config filtering done!\n")
     if errors:

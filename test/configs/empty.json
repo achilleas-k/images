@@ -1,4 +1,10 @@
 {
   "name": "empty",
-  "blueprint": {}
+  "blueprint": {
+    "packages": [
+      {
+        "name": "vim"
+      }
+    ]
+  }
 }
