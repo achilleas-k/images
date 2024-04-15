@@ -40,10 +40,6 @@ check-build-coverage:
   script:
     - ./test/scripts/install-dependencies
     - ./test/scripts/check-build-coverage ./s3configs/
-  cache:
-    key: testcache
-    paths:
-      - .cache/osbuild-images
 
 finish:
   stage: finish
@@ -77,10 +73,6 @@ generate-build-config-{distro}-{arch}:
   artifacts:
     paths:
       - build-config.yml
-  cache:
-    key: testcache
-    paths:
-      - {cache}
 """
 
 TRIGGER_TEMPLATE = """
@@ -112,10 +104,6 @@ generate-ostree-build-config-{distro}-{arch}:
       - build-configs
   needs:
     - image-build-trigger-{distro}-{arch}
-  cache:
-    key: testcache
-    paths:
-      - {cache}
 """
 
 OSTREE_TRIGGER_TEMPLATE = """
