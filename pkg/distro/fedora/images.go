@@ -456,6 +456,9 @@ func imageInstallerImage(workload workload.Workload,
 	if instCust := customizations.GetInstaller(); instCust != nil {
 		img.Kickstart.SudoNopasswd = instCust.SudoNopasswd
 		img.Kickstart.Unattended = instCust.Unattended
+		if instCust.Kickstart != nil {
+			img.Kickstart.UserFile = &kickstart.File{Contents: instCust.Kickstart.Contents}
+		}
 	}
 	if img.Kickstart.Unattended {
 		// NOTE: this is not supported right now because the
@@ -670,6 +673,9 @@ func iotInstallerImage(workload workload.Workload,
 	if instCust := customizations.GetInstaller(); instCust != nil {
 		img.Kickstart.SudoNopasswd = instCust.SudoNopasswd
 		img.Kickstart.Unattended = instCust.Unattended
+		if instCust.Kickstart != nil {
+			img.Kickstart.UserFile = &kickstart.File{Contents: instCust.Kickstart.Contents}
+		}
 	}
 
 	img.SquashfsCompression = "lz4"

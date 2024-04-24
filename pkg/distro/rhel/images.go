@@ -503,6 +503,9 @@ func EdgeInstallerImage(workload workload.Workload,
 	if instCust := customizations.GetInstaller(); instCust != nil {
 		img.Kickstart.SudoNopasswd = instCust.SudoNopasswd
 		img.Kickstart.Unattended = instCust.Unattended
+		if instCust.Kickstart != nil {
+			img.Kickstart.UserFile = &kickstart.File{Contents: instCust.Kickstart.Contents}
+		}
 	}
 
 	img.SquashfsCompression = "xz"
@@ -691,6 +694,9 @@ func ImageInstallerImage(workload workload.Workload,
 	if instCust := customizations.GetInstaller(); instCust != nil {
 		img.Kickstart.SudoNopasswd = instCust.SudoNopasswd
 		img.Kickstart.Unattended = instCust.Unattended
+		if instCust.Kickstart != nil {
+			img.Kickstart.UserFile = &kickstart.File{Contents: instCust.Kickstart.Contents}
+		}
 	}
 
 	installerConfig, err := t.getDefaultInstallerConfig()

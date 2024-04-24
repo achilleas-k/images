@@ -581,7 +581,7 @@ func (p *OS) serialize() osbuild.Pipeline {
 			commands = []string{fmt.Sprintf("/usr/sbin/subscription-manager register --org=${ORG_ID} --activationkey=${ACTIVATION_KEY} --serverurl %s --baseurl %s", p.Subscription.ServerUrl, p.Subscription.BaseUrl)}
 
 			// Insights is optional when using subscription-manager
-			if p.Subscription.Insights {
+			if p.Subscription.Insightso {
 				commands = append(commands, "/usr/bin/insights-client --register")
 				// insights-client creates the .gnupg directory during boot process, and is labeled incorrectly
 				commands = append(commands, "restorecon -R /root/.gnupg")
