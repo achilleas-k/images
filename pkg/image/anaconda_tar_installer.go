@@ -117,8 +117,10 @@ func (img *AnacondaTarInstaller) InstantiateManifest(m *manifest.Manifest,
 	anacondaPipeline.ExtraPackages = img.ExtraBasePackages.Include
 	anacondaPipeline.ExcludePackages = img.ExtraBasePackages.Exclude
 	anacondaPipeline.ExtraRepos = img.ExtraBasePackages.Repositories
-	anacondaPipeline.Users = img.Users
-	anacondaPipeline.Groups = img.Groups
+	anacondaPipeline.InteractiveDefaultsKickstart = &kickstart.Options{
+		Users:  img.Users,
+		Groups: img.Groups,
+	}
 	anacondaPipeline.Variant = img.Variant
 	anacondaPipeline.Biosdevname = (img.Platform.GetArch() == arch.ARCH_X86_64)
 	anacondaPipeline.AdditionalAnacondaModules = img.AdditionalAnacondaModules
