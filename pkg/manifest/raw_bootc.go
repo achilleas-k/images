@@ -171,6 +171,20 @@ func (p *RawBootcImage) serialize() osbuild.Pipeline {
 	fstabStage.Devices = devices
 	pipeline.AddStage(fstabStage)
 
+	expConfigStage := osbuild.NewExperimentalOSTreeConfigStage(
+		&osbuild.ExperimentalOSTreeConfigStageOptions{
+			Repo: "/ostree/repo",
+			Config: &osbuild.ExperimentalOSTreeConfig{
+				Integrity: &osbuild.ExperimentalOSTreeConfigIntegrity{
+					Composefs: "true",
+				},
+			},
+		},
+	)
+	expConfigStage.Mounts = mounts
+	expConfigStage.Devices = devices
+	pipeline.AddStage(expConfigStage)
+
 	// customize the image
 	if len(p.Groups) > 0 {
 		groupsStage := osbuild.GenGroupsStage(p.Groups)
