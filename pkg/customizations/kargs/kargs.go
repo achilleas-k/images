@@ -1,1 +1,57 @@
 package kargs
+
+type RootPerms string
+
+const (
+	RootPermsUnset RootPerms = ""
+	RootPermsRW    RootPerms = "rw"
+	RootPermsRO    RootPerms = "ro"
+)
+
+type Options struct {
+
+	// Consistent network device naming using biosdevname.
+	// Note that unless the system is a Dell system, or biosdevname is
+	// explicitly enabled with this option, the systemd naming scheme will take
+	// precedence.
+	// If the biosdevname install option is specified, it must remain as a boot
+	// option for the lifetime of the system.
+	Biosdevname *bool
+
+	// Specifies devices for console output. Multiple options can be specified.
+	// Output will appear on all of them. The last device will be used when
+	// opening /dev/console.
+	Console []string
+
+	// Using kexec, Linux can switch to a 'crash kernel' upon panic. This
+	// parameter reserves the physical memory region for that kernel image.
+	Crashkernel *string
+
+	// All Kernel messages with a loglevel smaller than the console loglevel
+	// will be printed to the console.
+	Loglevel *uint
+
+	// The modprobe.blacklist option will prevent the automatic loading of the
+	// module by the kernel (however, manual loading is still possible).
+	ModprobeBlacklist []string
+
+	// Network interfaces are renamed to give them predictable names when
+	// possible. It is enabled by default.
+	NetIfnames *bool
+
+	// Disables the code which tests for broken timer IRQ sources.
+	NoTimerCheck *bool
+
+	// The 'ro' option tells the kernel to mount the root filesystem as
+	// 'read-only' so that filesystem consistency check programs (fsck) can do
+	// their work on a quiescent filesystem. No processes can write to files
+	// on the filesystem in question until it is 'remounted' as read/write
+	// capable, for example, by 'mount -w -n -o remount /'.
+	// The 'rw' option tells the kernel to mount the root filesystem
+	// read/write.  This is the default.
+	RootPerms RootPerms
+
+	// Add extra options not handled by this package. These will be appended to
+	// the kernel arguments directly, separated by spaces.
+	Extra []string
+}
