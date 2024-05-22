@@ -2,6 +2,7 @@ package rhel9
 
 import (
 	"github.com/osbuild/images/internal/common"
+	"github.com/osbuild/images/pkg/customizations/kargs"
 	"github.com/osbuild/images/pkg/distro"
 	"github.com/osbuild/images/pkg/distro/rhel"
 	"github.com/osbuild/images/pkg/osbuild"
@@ -10,7 +11,14 @@ import (
 )
 
 // TODO: move these to the EC2 environment
-const amiKernelOptions = "console=tty0 console=ttyS0,115200n8 net.ifnames=0 rd.blacklist=nouveau nvme_core.io_timeout=4294967295"
+var amiKernelOptions = kargs.Options{
+	Console:    []string{"tty0", "ttyS0,115200n8"},
+	NetIfnames: common.ToPtr(false),
+	Extra: []string{
+		"rd.blacklist=nouveau",
+		"nvme_core.io_timeout=4294967295",
+	},
+}
 
 // default EC2 images config (common for all architectures)
 func baseEc2ImageConfig() *distro.ImageConfig {
@@ -315,7 +323,7 @@ func mkEc2ImgTypeX86_64(osVersion string, rhsm bool) *rhel.ImageType {
 	)
 
 	it.Compression = "xz"
-	it.KernelOptions = amiKernelOptions
+	it.KernelOptions = amiKernelOptions.String()
 	it.Bootable = true
 	it.DefaultSize = 10 * common.GibiByte
 	it.DefaultImageConfig = defaultEc2ImageConfigX86_64(osVersion, rhsm)
@@ -338,7 +346,7 @@ func mkAMIImgTypeX86_64() *rhel.ImageType {
 		[]string{"image"},
 	)
 
-	it.KernelOptions = amiKernelOptions
+	it.KernelOptions = amiKernelOptions.String()
 	it.Bootable = true
 	it.DefaultSize = 10 * common.GibiByte
 	it.DefaultImageConfig = defaultAMIImageConfigX86_64()
@@ -363,7 +371,19 @@ func mkEC2SapImgTypeX86_64(osVersion string, rhsm bool) *rhel.ImageType {
 	)
 
 	it.Compression = "xz"
-	it.KernelOptions = "console=ttyS0,115200n8 console=tty0 net.ifnames=0 rd.blacklist=nouveau nvme_core.io_timeout=4294967295 processor.max_cstate=1 intel_idle.max_cstate=1"
+	it.KernelOptions = kargs.Options{
+		Console: []string{
+			"ttyS0,115200n8",
+			"tty0",
+		},
+		NetIfnames: common.ToPtr(false),
+		Extra: []string{
+			"rd.blacklist=nouveau",
+			"nvme_core.io_timeout=4294967295",
+			"processor.max_cstate=1",
+			"intel_idle.max_cstate=1",
+		},
+	}.String()
 	it.Bootable = true
 	it.DefaultSize = 10 * common.GibiByte
 	it.DefaultImageConfig = sapImageConfig(osVersion).InheritFrom(defaultEc2ImageConfigX86_64(osVersion, rhsm))
@@ -388,7 +408,7 @@ func mkEc2HaImgTypeX86_64(osVersion string, rhsm bool) *rhel.ImageType {
 	)
 
 	it.Compression = "xz"
-	it.KernelOptions = amiKernelOptions
+	it.KernelOptions = amiKernelOptions.String()
 	it.Bootable = true
 	it.DefaultSize = 10 * common.GibiByte
 	it.DefaultImageConfig = defaultEc2ImageConfigX86_64(osVersion, rhsm)
@@ -412,7 +432,18 @@ func mkAMIImgTypeAarch64() *rhel.ImageType {
 		[]string{"image"},
 	)
 
-	it.KernelOptions = "console=ttyS0,115200n8 console=tty0 net.ifnames=0 rd.blacklist=nouveau nvme_core.io_timeout=4294967295 iommu.strict=0"
+	it.KernelOptions = kargs.Options{
+		Console: []string{
+			"ttyS0,115200n8",
+			"tty0",
+		},
+		NetIfnames: common.ToPtr(false),
+		Extra: []string{
+			"rd.blacklist=nouveau",
+			"nvme_core.io_timeout=4294967295",
+			"iommu.strict=0",
+		},
+	}.String()
 	it.Bootable = true
 	it.DefaultSize = 10 * common.GibiByte
 	it.DefaultImageConfig = defaultAMIImageConfig()
@@ -437,7 +468,18 @@ func mkEC2ImgTypeAarch64(osVersion string, rhsm bool) *rhel.ImageType {
 	)
 
 	it.Compression = "xz"
-	it.KernelOptions = "console=ttyS0,115200n8 console=tty0 net.ifnames=0 rd.blacklist=nouveau nvme_core.io_timeout=4294967295 iommu.strict=0"
+	it.KernelOptions = kargs.Options{
+		Console: []string{
+			"ttyS0,115200n8",
+			"tty0",
+		},
+		NetIfnames: common.ToPtr(false),
+		Extra: []string{
+			"rd.blacklist=nouveau",
+			"nvme_core.io_timeout=4294967295",
+			"iommu.strict=0",
+		},
+	}.String()
 	it.Bootable = true
 	it.DefaultSize = 10 * common.GibiByte
 	it.DefaultImageConfig = defaultEc2ImageConfig(osVersion, rhsm)

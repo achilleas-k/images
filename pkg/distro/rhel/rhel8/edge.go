@@ -6,6 +6,7 @@ import (
 	"github.com/osbuild/images/internal/common"
 	"github.com/osbuild/images/pkg/arch"
 	"github.com/osbuild/images/pkg/customizations/fsnode"
+	"github.com/osbuild/images/pkg/customizations/kargs"
 	"github.com/osbuild/images/pkg/disk"
 	"github.com/osbuild/images/pkg/distro"
 	"github.com/osbuild/images/pkg/distro/rhel"
@@ -80,7 +81,7 @@ func mkEdgeRawImgType() *rhel.ImageType {
 
 	it.NameAliases = []string{"rhel-edge-raw-image"}
 	it.Compression = "xz"
-	it.KernelOptions = "modprobe.blacklist=vc4"
+	it.KernelOptions = kargs.Options{ModprobeBlacklist: []string{"vc4"}}.String()
 	it.DefaultImageConfig = &distro.ImageConfig{
 		Keyboard: &osbuild.KeymapStageOptions{
 			Keymap: "us",
@@ -210,7 +211,7 @@ func mkMinimalRawImgType() *rhel.ImageType {
 		// requires a kickstart file in the root directory.
 		Files: []*fsnode.File{initialSetupKickstart()},
 	}
-	it.KernelOptions = "ro"
+	it.KernelOptions = kargs.Options{RootPerms: kargs.RootPermsRO}.String()
 	it.Bootable = true
 	it.DefaultSize = 2 * common.GibiByte
 	it.BasePartitionTables = defaultBasePartitionTables

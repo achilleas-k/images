@@ -2,6 +2,7 @@ package rhel7
 
 import (
 	"github.com/osbuild/images/internal/common"
+	"github.com/osbuild/images/pkg/customizations/kargs"
 	"github.com/osbuild/images/pkg/distro"
 	"github.com/osbuild/images/pkg/distro/rhel"
 	"github.com/osbuild/images/pkg/osbuild"
@@ -26,7 +27,15 @@ func mkQcow2ImgType() *rhel.ImageType {
 	// all RHEL 7 images should use sgdisk
 	it.DiskImagePartTool = common.ToPtr(osbuild.PTSgdisk)
 
-	it.KernelOptions = "console=tty0 console=ttyS0,115200n8 crashkernel=auto net.ifnames=0 no_timer_check"
+	it.KernelOptions = kargs.Options{
+		Console: []string{
+			"tty0",
+			"ttyS0,115200n8",
+		},
+		Crashkernel:  common.ToPtr("auto"),
+		NoTimerCheck: true,
+		NetIfnames:   common.ToPtr(false),
+	}.String()
 	it.Bootable = true
 	it.DefaultSize = 10 * common.GibiByte
 	it.DefaultImageConfig = qcow2DefaultImgConfig

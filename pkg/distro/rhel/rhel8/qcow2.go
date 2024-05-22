@@ -2,12 +2,23 @@ package rhel8
 
 import (
 	"github.com/osbuild/images/internal/common"
+	"github.com/osbuild/images/pkg/customizations/kargs"
 	"github.com/osbuild/images/pkg/distro"
 	"github.com/osbuild/images/pkg/distro/rhel"
 	"github.com/osbuild/images/pkg/osbuild"
 	"github.com/osbuild/images/pkg/rpmmd"
 	"github.com/osbuild/images/pkg/subscription"
 )
+
+var qemuKernelOptions = kargs.Options{
+	Console: []string{
+		"tty0",
+		"ttyS0,115200n8",
+	},
+	Crashkernel:  common.ToPtr("auto"),
+	NetIfnames:   common.ToPtr(false),
+	NoTimerCheck: true,
+}
 
 func mkQcow2ImgType(rd *rhel.Distribution) *rhel.ImageType {
 	it := rhel.NewImageType(
@@ -24,7 +35,7 @@ func mkQcow2ImgType(rd *rhel.Distribution) *rhel.ImageType {
 	)
 
 	it.DefaultImageConfig = qcowImageConfig(rd)
-	it.KernelOptions = "console=tty0 console=ttyS0,115200n8 crashkernel=auto net.ifnames=0 no_timer_check"
+	it.KernelOptions = qemuKernelOptions.String()
 	it.Bootable = true
 	it.DefaultSize = 10 * common.GibiByte
 	it.BasePartitionTables = defaultBasePartitionTables
@@ -47,7 +58,7 @@ func mkOCIImgType(rd *rhel.Distribution) *rhel.ImageType {
 	)
 
 	it.DefaultImageConfig = qcowImageConfig(rd)
-	it.KernelOptions = "console=tty0 console=ttyS0,115200n8 crashkernel=auto net.ifnames=0 no_timer_check"
+	it.KernelOptions = qemuKernelOptions.String()
 	it.Bootable = true
 	it.DefaultSize = 10 * common.GibiByte
 	it.BasePartitionTables = defaultBasePartitionTables
@@ -69,7 +80,10 @@ func mkOpenstackImgType() *rhel.ImageType {
 		[]string{"qcow2"},
 	)
 
-	it.KernelOptions = "net.ifnames=0 ro"
+	it.KernelOptions = kargs.Options{
+		NetIfnames: common.ToPtr(false),
+		RootPerms:  kargs.RootPermsRO,
+	}.String()
 	it.DefaultSize = 4 * common.GibiByte
 	it.Bootable = true
 	it.BasePartitionTables = defaultBasePartitionTables

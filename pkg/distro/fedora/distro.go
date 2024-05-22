@@ -10,6 +10,7 @@ import (
 	"github.com/osbuild/images/internal/environment"
 	"github.com/osbuild/images/pkg/arch"
 	"github.com/osbuild/images/pkg/customizations/fsnode"
+	"github.com/osbuild/images/pkg/customizations/kargs"
 	"github.com/osbuild/images/pkg/customizations/oscap"
 	"github.com/osbuild/images/pkg/distro"
 	"github.com/osbuild/images/pkg/osbuild"
@@ -34,23 +35,34 @@ const (
 	blueprintPkgsKey = "blueprint"
 
 	//Default kernel command line
-	defaultKernelOptions = "ro"
-
-	// Added kernel command line options for ami, qcow2, openstack, vhd and vmdk types
-	cloudKernelOptions = "biosdevname=0 console=ttyS0,115200n8 net.ifnames=0 no_timer_check ro"
-
-	// Added kernel command line options for iot-raw-image and iot-qcow2-image types
-	ostreeDeploymentKernelOptions = "modprobe.blacklist=vc4 rw coreos.no_persist_ip"
 
 	// location for saving openscap remediation data
 	oscapDataDir = "/oscap_data"
 )
 
 var (
+	defaultKernelOptions = kargs.Options{RootPerms: kargs.RootPermsRO}
+
 	oscapProfileAllowList = []oscap.Profile{
 		oscap.Ospp,
 		oscap.PciDss,
 		oscap.Standard,
+	}
+
+	// Added kernel command line options for ami, qcow2, openstack, vhd and vmdk types
+	cloudKernelOptions = kargs.Options{
+		Biosdevname:  common.ToPtr(false),
+		Console:      []string{"ttyS0,115200n8"},
+		NetIfnames:   common.ToPtr(false),
+		NoTimerCheck: true,
+		RootPerms:    kargs.RootPermsRO,
+	}
+
+	// Added kernel command line options for iot-raw-image and iot-qcow2-image types
+	ostreeDeploymentKernelOptions = kargs.Options{
+		ModprobeBlacklist: []string{"vc4"},
+		RootPerms:         kargs.RootPermsRW,
+		Extra:             []string{"coreos.no_persist_ip"},
 	}
 
 	// Services
@@ -222,7 +234,7 @@ var (
 		payloadPipelines:    []string{"ostree-deployment", "image", "xz", "coi-tree", "efiboot-tree", "bootiso-tree", "bootiso"},
 		exports:             []string{"bootiso"},
 		basePartitionTables: iotSimplifiedInstallerPartitionTables,
-		kernelOptions:       ostreeDeploymentKernelOptions,
+		kernelOptions:       ostreeDeploymentKernelOptions.String(),
 	}
 
 	iotRawImgType = imageType{
@@ -249,7 +261,7 @@ var (
 		payloadPipelines:    []string{"ostree-deployment", "image", "xz"},
 		exports:             []string{"xz"},
 		basePartitionTables: iotBasePartitionTables,
-		kernelOptions:       ostreeDeploymentKernelOptions,
+		kernelOptions:       ostreeDeploymentKernelOptions.String(),
 
 		// Passing an empty map into the required partition sizes disables the
 		// default partition sizes normally set so our `basePartitionTables` can
@@ -279,7 +291,7 @@ var (
 		payloadPipelines:    []string{"ostree-deployment", "image", "qcow2"},
 		exports:             []string{"qcow2"},
 		basePartitionTables: iotBasePartitionTables,
-		kernelOptions:       ostreeDeploymentKernelOptions,
+		kernelOptions:       ostreeDeploymentKernelOptions.String(),
 	}
 
 	qcow2ImgType = imageType{
@@ -293,7 +305,7 @@ var (
 		defaultImageConfig: &distro.ImageConfig{
 			DefaultTarget: common.ToPtr("multi-user.target"),
 		},
-		kernelOptions:       cloudKernelOptions,
+		kernelOptions:       cloudKernelOptions.String(),
 		bootable:            true,
 		defaultSize:         5 * common.GibiByte,
 		image:               diskImage,
@@ -321,7 +333,7 @@ var (
 			osPkgsKey: vmdkCommonPackageSet,
 		},
 		defaultImageConfig:  vmdkDefaultImageConfig,
-		kernelOptions:       cloudKernelOptions,
+		kernelOptions:       cloudKernelOptions.String(),
 		bootable:            true,
 		defaultSize:         2 * common.GibiByte,
 		image:               diskImage,
@@ -339,7 +351,7 @@ var (
 			osPkgsKey: vmdkCommonPackageSet,
 		},
 		defaultImageConfig:  vmdkDefaultImageConfig,
-		kernelOptions:       cloudKernelOptions,
+		kernelOptions:       cloudKernelOptions.String(),
 		bootable:            true,
 		defaultSize:         2 * common.GibiByte,
 		image:               diskImage,
@@ -413,7 +425,7 @@ var (
 			},
 		},
 		rpmOstree:           false,
-		kernelOptions:       defaultKernelOptions,
+		kernelOptions:       defaultKernelOptions.String(),
 		bootable:            true,
 		defaultSize:         2 * common.GibiByte,
 		image:               diskImage,

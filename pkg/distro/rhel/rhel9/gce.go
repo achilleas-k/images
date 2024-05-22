@@ -2,6 +2,7 @@ package rhel9
 
 import (
 	"github.com/osbuild/images/internal/common"
+	"github.com/osbuild/images/pkg/customizations/kargs"
 	"github.com/osbuild/images/pkg/distro"
 	"github.com/osbuild/images/pkg/distro/rhel"
 	"github.com/osbuild/images/pkg/osbuild"
@@ -9,7 +10,14 @@ import (
 	"github.com/osbuild/images/pkg/subscription"
 )
 
-const gceKernelOptions = "biosdevname=0 console=ttyS0,38400n8d net.ifnames=0 scsi_mod.use_blk_mq=Y"
+var gceKernelOptions = kargs.Options{
+	Biosdevname: common.ToPtr(false),
+	Console: []string{
+		"ttyS0,38400n8d",
+	},
+	NetIfnames: common.ToPtr(false),
+	Extra:      []string{"scsi_mod.use_blk_mq=Y"},
+}
 
 func mkGCEImageType() *rhel.ImageType {
 	it := rhel.NewImageType(
@@ -28,7 +36,7 @@ func mkGCEImageType() *rhel.ImageType {
 	// The configuration for non-RHUI images does not touch the RHSM configuration at all.
 	// https://issues.redhat.com/browse/COMPOSER-2157
 	it.DefaultImageConfig = baseGCEImageConfig()
-	it.KernelOptions = gceKernelOptions
+	it.KernelOptions = gceKernelOptions.String()
 	it.DefaultSize = 20 * common.GibiByte
 	it.Bootable = true
 	// TODO: the base partition table still contains the BIOS boot partition, but the image is UEFI-only
@@ -52,7 +60,7 @@ func mkGCERHUIImageType() *rhel.ImageType {
 	)
 
 	it.DefaultImageConfig = defaultGceRhuiImageConfig()
-	it.KernelOptions = gceKernelOptions
+	it.KernelOptions = gceKernelOptions.String()
 	it.DefaultSize = 20 * common.GibiByte
 	it.Bootable = true
 	// TODO: the base partition table still contains the BIOS boot partition, but the image is UEFI-only

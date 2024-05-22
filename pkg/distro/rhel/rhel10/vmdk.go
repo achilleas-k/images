@@ -2,12 +2,13 @@ package rhel10
 
 import (
 	"github.com/osbuild/images/internal/common"
+	"github.com/osbuild/images/pkg/customizations/kargs"
 	"github.com/osbuild/images/pkg/distro"
 	"github.com/osbuild/images/pkg/distro/rhel"
 	"github.com/osbuild/images/pkg/rpmmd"
 )
 
-const vmdkKernelOptions = "net.ifnames=0 ro"
+var vmdkKernelOptions = kargs.Options{NetIfnames: common.ToPtr(false), RootPerms: kargs.RootPermsRO}
 
 func mkVMDKImgType() *rhel.ImageType {
 	it := rhel.NewImageType(
@@ -26,7 +27,7 @@ func mkVMDKImgType() *rhel.ImageType {
 	it.DefaultImageConfig = &distro.ImageConfig{
 		Locale: common.ToPtr("en_US.UTF-8"),
 	}
-	it.KernelOptions = vmdkKernelOptions
+	it.KernelOptions = vmdkKernelOptions.String()
 	it.Bootable = true
 	it.DefaultSize = 4 * common.GibiByte
 	it.BasePartitionTables = defaultBasePartitionTables
@@ -51,7 +52,7 @@ func mkOVAImgType() *rhel.ImageType {
 	it.DefaultImageConfig = &distro.ImageConfig{
 		Locale: common.ToPtr("en_US.UTF-8"),
 	}
-	it.KernelOptions = vmdkKernelOptions
+	it.KernelOptions = vmdkKernelOptions.String()
 	it.Bootable = true
 	it.DefaultSize = 4 * common.GibiByte
 	it.BasePartitionTables = defaultBasePartitionTables

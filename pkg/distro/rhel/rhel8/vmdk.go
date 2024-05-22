@@ -2,11 +2,15 @@ package rhel8
 
 import (
 	"github.com/osbuild/images/internal/common"
+	"github.com/osbuild/images/pkg/customizations/kargs"
 	"github.com/osbuild/images/pkg/distro/rhel"
 	"github.com/osbuild/images/pkg/rpmmd"
 )
 
-const vmdkKernelOptions = "net.ifnames=0 ro"
+var vmdkKernelOptions = kargs.Options{
+	NetIfnames: common.ToPtr(false),
+	RootPerms:  kargs.RootPermsRO,
+}
 
 func mkVmdkImgType() *rhel.ImageType {
 	it := rhel.NewImageType(
@@ -22,7 +26,7 @@ func mkVmdkImgType() *rhel.ImageType {
 		[]string{"vmdk"},
 	)
 
-	it.KernelOptions = vmdkKernelOptions
+	it.KernelOptions = vmdkKernelOptions.String()
 	it.Bootable = true
 	it.DefaultSize = 4 * common.GibiByte
 	it.BasePartitionTables = defaultBasePartitionTables
@@ -44,7 +48,7 @@ func mkOvaImgType() *rhel.ImageType {
 		[]string{"archive"},
 	)
 
-	it.KernelOptions = vmdkKernelOptions
+	it.KernelOptions = vmdkKernelOptions.String()
 	it.Bootable = true
 	it.DefaultSize = 4 * common.GibiByte
 	it.BasePartitionTables = defaultBasePartitionTables

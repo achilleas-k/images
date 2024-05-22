@@ -6,6 +6,7 @@ import (
 	"github.com/osbuild/images/internal/common"
 	"github.com/osbuild/images/pkg/arch"
 	"github.com/osbuild/images/pkg/customizations/fsnode"
+	"github.com/osbuild/images/pkg/customizations/kargs"
 	"github.com/osbuild/images/pkg/disk"
 	"github.com/osbuild/images/pkg/distro"
 	"github.com/osbuild/images/pkg/distro/rhel"
@@ -13,9 +14,20 @@ import (
 	"github.com/osbuild/images/pkg/rpmmd"
 )
 
-const (
-	ec2KernelOptions = "console=tty0 console=ttyS0,115200n8 crashkernel=auto net.ifnames=0 ro rd.blacklist=nouveau nvme_core.io_timeout=4294967295 LANG=en_US.UTF-8"
-)
+var ec2KernelOptions = kargs.Options{
+	Console: []string{
+		"tty0",
+		"ttyS0,115200n8",
+	},
+	Crashkernel: common.ToPtr("auto"),
+	NetIfnames:  common.ToPtr(false),
+	RootPerms:   kargs.RootPermsRO,
+	Extra: []string{
+		"rd.blacklist=nouveau",
+		"nvme_core.io_timeout=4294967295",
+		"LANG=en_US.UTF-8",
+	},
+}
 
 func mkEc2ImgTypeX86_64() *rhel.ImageType {
 	it := rhel.NewImageType(
@@ -36,7 +48,7 @@ func mkEc2ImgTypeX86_64() *rhel.ImageType {
 
 	it.Compression = "xz"
 	it.DefaultImageConfig = ec2ImageConfig()
-	it.KernelOptions = ec2KernelOptions
+	it.KernelOptions = ec2KernelOptions.String()
 	it.Bootable = true
 	it.DefaultSize = 10 * common.GibiByte
 	it.BasePartitionTables = ec2PartitionTables

@@ -3,6 +3,7 @@ package rhel7
 import (
 	"github.com/osbuild/images/internal/common"
 	"github.com/osbuild/images/pkg/arch"
+	"github.com/osbuild/images/pkg/customizations/kargs"
 	"github.com/osbuild/images/pkg/disk"
 	"github.com/osbuild/images/pkg/distro"
 	"github.com/osbuild/images/pkg/distro/rhel"
@@ -31,7 +32,19 @@ func mkAzureRhuiImgType() *rhel.ImageType {
 	it.DiskImageVPCForceSize = common.ToPtr(false)
 
 	it.Compression = "xz"
-	it.KernelOptions = "console=tty1 console=ttyS0 crashkernel=auto ro earlyprintk=ttyS0 rootdelay=300 scsi_mod.use_blk_mq=y"
+	it.KernelOptions = kargs.Options{
+		Console: []string{
+			"tty1",
+			"ttyS0",
+		},
+		Crashkernel: common.ToPtr("auto"),
+		RootPerms:   kargs.RootPermsRO,
+		Extra: []string{
+			"earlyprintk=ttyS0",
+			"rootdelay=300",
+			"scsi_mod.use_blk_mq=y",
+		},
+	}.String()
 	it.DefaultImageConfig = azureDefaultImgConfig
 	it.Bootable = true
 	it.DefaultSize = 64 * common.GibiByte

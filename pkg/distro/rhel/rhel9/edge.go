@@ -243,7 +243,7 @@ func mkEdgeAMIImgType(d *rhel.Distribution) *rhel.ImageType {
 		it.DefaultImageConfig.IgnitionPlatform = common.ToPtr("metal")
 	}
 
-	it.KernelOptions = amiKernelOptions + " modprobe.blacklist=vc4"
+	it.KernelOptions = amiKernelOptions.String() + " modprobe.blacklist=vc4"
 	if common.VersionGreaterThanOrEqual(d.OsVersion(), "9.2") || !d.IsRHEL() {
 		it.KernelOptions += " rw coreos.no_persist_ip"
 	}

@@ -2,6 +2,7 @@ package rhel10
 
 import (
 	"github.com/osbuild/images/internal/common"
+	"github.com/osbuild/images/pkg/customizations/kargs"
 	"github.com/osbuild/images/pkg/distro"
 	"github.com/osbuild/images/pkg/distro/rhel"
 	"github.com/osbuild/images/pkg/osbuild"
@@ -23,7 +24,7 @@ func mkAzureImgType() *rhel.ImageType {
 		[]string{"vpc"},
 	)
 
-	it.KernelOptions = defaultAzureKernelOptions
+	it.KernelOptions = defaultAzureKernelOptions.String()
 	it.Bootable = true
 	it.DefaultSize = 4 * common.GibiByte
 	it.DefaultImageConfig = defaultAzureImageConfig
@@ -47,7 +48,7 @@ func mkAzureByosImgType(rd distro.Distro) *rhel.ImageType {
 		[]string{"vpc"},
 	)
 
-	it.KernelOptions = defaultAzureKernelOptions
+	it.KernelOptions = defaultAzureKernelOptions.String()
 	it.Bootable = true
 	it.DefaultSize = 4 * common.GibiByte
 	it.DefaultImageConfig = defaultAzureImageConfig
@@ -146,7 +147,18 @@ func azurePackageSet(t *rhel.ImageType) rpmmd.PackageSet {
 // IMAGE CONFIG
 
 // use loglevel=3 as described in the RHEL documentation and used in existing RHEL images built by MSFT
-const defaultAzureKernelOptions = "console=tty1 console=ttyS0 loglevel=3 ro earlyprintk=ttyS0 rootdelay=300"
+var defaultAzureKernelOptions = kargs.Options{
+	Console: []string{
+		"tty1",
+		"ttyS0",
+	},
+	Loglevel:  common.ToPtr(uint(3)),
+	RootPerms: kargs.RootPermsRO,
+	Extra: []string{
+		"earlyprintk=ttyS0",
+		"rootdelay=300",
+	},
+}
 
 // based on https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/deploying_rhel_9_on_microsoft_azure/assembly_deploying-a-rhel-image-as-a-virtual-machine-on-microsoft-azure_cloud-content-azure#making-configuration-changes_configure-the-image-azure
 var defaultAzureImageConfig = &distro.ImageConfig{

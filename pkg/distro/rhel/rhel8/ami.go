@@ -2,6 +2,7 @@ package rhel8
 
 import (
 	"github.com/osbuild/images/internal/common"
+	"github.com/osbuild/images/pkg/customizations/kargs"
 	"github.com/osbuild/images/pkg/distro"
 	"github.com/osbuild/images/pkg/distro/rhel"
 	"github.com/osbuild/images/pkg/osbuild"
@@ -9,10 +10,46 @@ import (
 	"github.com/osbuild/images/pkg/subscription"
 )
 
-const (
-	amiX86KernelOptions     = "console=tty0 console=ttyS0,115200n8 crashkernel=auto net.ifnames=0 rd.blacklist=nouveau nvme_core.io_timeout=4294967295"
-	amiAarch64KernelOptions = "console=tty0 console=ttyS0,115200n8 crashkernel=auto net.ifnames=0 rd.blacklist=nouveau nvme_core.io_timeout=4294967295 iommu.strict=0"
-	amiSapKernelOptions     = "console=tty0 console=ttyS0,115200n8 crashkernel=auto net.ifnames=0 rd.blacklist=nouveau nvme_core.io_timeout=4294967295 processor.max_cstate=1 intel_idle.max_cstate=1"
+var (
+	amiX86KernelOptions = kargs.Options{
+		Console: []string{
+			"tty0",
+			"ttyS0,115200n8",
+		},
+		Crashkernel: common.ToPtr("auto"),
+		NetIfnames:  common.ToPtr(false),
+		Extra: []string{
+			"rd.blacklist=nouveau",
+			"nvme_core.io_timeout=4294967295",
+		},
+	}
+	amiAarch64KernelOptions = kargs.Options{
+		Console: []string{
+			"tty0",
+			"ttyS0,115200n8",
+		},
+		Crashkernel: common.ToPtr("auto"),
+		NetIfnames:  common.ToPtr(false),
+		Extra: []string{
+			"rd.blacklist=nouveau",
+			"nvme_core.io_timeout=4294967295",
+			"iommu.strict=0",
+		},
+	}
+	amiSapKernelOptions = kargs.Options{
+		Console: []string{
+			"tty0",
+			"ttyS0,115200n8",
+		},
+		Crashkernel: common.ToPtr("auto"),
+		NetIfnames:  common.ToPtr(false),
+		Extra: []string{
+			"rd.blacklist=nouveau",
+			"nvme_core.io_timeout=4294967295",
+			"processor.max_cstate=1",
+			"intel_idle.max_cstate=1",
+		},
+	}
 )
 
 func mkAmiImgTypeX86_64() *rhel.ImageType {
@@ -30,7 +67,7 @@ func mkAmiImgTypeX86_64() *rhel.ImageType {
 	)
 
 	it.DefaultImageConfig = defaultAMIImageConfigX86_64()
-	it.KernelOptions = amiX86KernelOptions
+	it.KernelOptions = amiX86KernelOptions.String()
 	it.Bootable = true
 	it.DefaultSize = 10 * common.GibiByte
 	it.BasePartitionTables = ec2PartitionTables
@@ -54,7 +91,7 @@ func mkEc2ImgTypeX86_64(rd *rhel.Distribution) *rhel.ImageType {
 
 	it.Compression = "xz"
 	it.DefaultImageConfig = defaultEc2ImageConfigX86_64(rd)
-	it.KernelOptions = amiX86KernelOptions
+	it.KernelOptions = amiX86KernelOptions.String()
 	it.Bootable = true
 	it.DefaultSize = 10 * common.GibiByte
 	it.BasePartitionTables = ec2PartitionTables
@@ -78,7 +115,7 @@ func mkEc2HaImgTypeX86_64(rd *rhel.Distribution) *rhel.ImageType {
 
 	it.Compression = "xz"
 	it.DefaultImageConfig = defaultEc2ImageConfigX86_64(rd)
-	it.KernelOptions = amiX86KernelOptions
+	it.KernelOptions = amiX86KernelOptions.String()
 	it.Bootable = true
 	it.DefaultSize = 10 * common.GibiByte
 	it.BasePartitionTables = ec2PartitionTables
@@ -101,7 +138,7 @@ func mkAmiImgTypeAarch64() *rhel.ImageType {
 	)
 
 	it.DefaultImageConfig = defaultAMIImageConfig()
-	it.KernelOptions = amiAarch64KernelOptions
+	it.KernelOptions = amiAarch64KernelOptions.String()
 	it.Bootable = true
 	it.DefaultSize = 10 * common.GibiByte
 	it.BasePartitionTables = ec2PartitionTables
@@ -125,7 +162,7 @@ func mkEc2ImgTypeAarch64(rd *rhel.Distribution) *rhel.ImageType {
 
 	it.Compression = "xz"
 	it.DefaultImageConfig = defaultEc2ImageConfig(rd)
-	it.KernelOptions = amiAarch64KernelOptions
+	it.KernelOptions = amiAarch64KernelOptions.String()
 	it.Bootable = true
 	it.DefaultSize = 10 * common.GibiByte
 	it.BasePartitionTables = ec2PartitionTables
@@ -149,7 +186,7 @@ func mkEc2SapImgTypeX86_64(rd *rhel.Distribution) *rhel.ImageType {
 
 	it.Compression = "xz"
 	it.DefaultImageConfig = defaultEc2SapImageConfigX86_64(rd)
-	it.KernelOptions = amiSapKernelOptions
+	it.KernelOptions = amiSapKernelOptions.String()
 	it.Bootable = true
 	it.DefaultSize = 10 * common.GibiByte
 	it.BasePartitionTables = ec2PartitionTables
