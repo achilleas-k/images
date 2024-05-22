@@ -9,7 +9,7 @@ import (
 	"github.com/osbuild/images/pkg/subscription"
 )
 
-const gceKernelOptions = "net.ifnames=0 biosdevname=0 scsi_mod.use_blk_mq=Y crashkernel=auto console=ttyS0,38400n8d"
+const gceKernelOptions = "biosdevname=0 console=ttyS0,38400n8d crashkernel=auto net.ifnames=0 scsi_mod.use_blk_mq=Y"
 
 func mkGceImgType(rd distro.Distro) *rhel.ImageType {
 	it := rhel.NewImageType(

@@ -37,7 +37,7 @@ const (
 	defaultKernelOptions = "ro"
 
 	// Added kernel command line options for ami, qcow2, openstack, vhd and vmdk types
-	cloudKernelOptions = "ro no_timer_check console=ttyS0,115200n8 biosdevname=0 net.ifnames=0"
+	cloudKernelOptions = "biosdevname=0 console=ttyS0,115200n8 net.ifnames=0 no_timer_check ro"
 
 	// Added kernel command line options for iot-raw-image and iot-qcow2-image types
 	ostreeDeploymentKernelOptions = "modprobe.blacklist=vc4 rw coreos.no_persist_ip"

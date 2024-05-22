@@ -26,7 +26,7 @@ func mkQcow2ImgType() *rhel.ImageType {
 	// all RHEL 7 images should use sgdisk
 	it.DiskImagePartTool = common.ToPtr(osbuild.PTSgdisk)
 
-	it.KernelOptions = "console=tty0 console=ttyS0,115200n8 no_timer_check net.ifnames=0 crashkernel=auto"
+	it.KernelOptions = "console=tty0 console=ttyS0,115200n8 crashkernel=auto net.ifnames=0 no_timer_check"
 	it.Bootable = true
 	it.DefaultSize = 10 * common.GibiByte
 	it.DefaultImageConfig = qcow2DefaultImgConfig
