@@ -1,5 +1,10 @@
 package kargs
 
+import (
+	"fmt"
+	"strings"
+)
+
 type RootPerms string
 
 const (
@@ -54,4 +59,54 @@ type Options struct {
 	// Add extra options not handled by this package. These will be appended to
 	// the kernel arguments directly, separated by spaces.
 	Extra []string
+}
+
+func boolPtrToString(b *bool) string {
+	if b == nil {
+		return ""
+	}
+	if *b {
+		return "1"
+	}
+	return "0"
+}
+
+func (o Options) String() string {
+	optionsStr := []string{}
+
+	if biosdevname := boolPtrToString(o.Biosdevname); biosdevname != "" {
+		optionsStr = append(optionsStr, fmt.Sprintf("biosdevname=%s", biosdevname))
+	}
+
+	for _, consoleOpt := range o.Console {
+		optionsStr = append(optionsStr, fmt.Sprintf("console=%s", consoleOpt))
+	}
+
+	if o.Crashkernel != nil {
+		optionsStr = append(optionsStr, fmt.Sprintf("crashkernel=%s", *o.Crashkernel))
+	}
+
+	if o.Loglevel != nil {
+		optionsStr = append(optionsStr, fmt.Sprintf("loglevel=%d", *o.Loglevel))
+	}
+
+	if len(o.ModprobeBlacklist) > 0 {
+		optionsStr = append(optionsStr, fmt.Sprintf("modprobe.blacklist=%s", strings.Join(o.ModprobeBlacklist, ",")))
+	}
+
+	if netifnames := boolPtrToString(o.NetIfnames); netifnames != "" {
+		optionsStr = append(optionsStr, fmt.Sprintf("net.ifnames=%s", netifnames))
+	}
+
+	if noTimerCheck := boolPtrToString(o.NoTimerCheck); noTimerCheck == "1" {
+		optionsStr = append(optionsStr, "no_timer_check")
+	}
+
+	if o.RootPerms != RootPermsUnset {
+		optionsStr = append(optionsStr, string(o.RootPerms))
+	}
+
+	optionsStr = append(optionsStr, o.Extra...)
+
+	return strings.Join(optionsStr, " ")
 }
