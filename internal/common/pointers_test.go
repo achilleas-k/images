@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,4 +24,25 @@ func TestToPtr(t *testing.T) {
 	gotStr := ToPtr(valueStr)
 	assert.Equal(t, valueStr, *gotStr)
 
+}
+
+func TestPtrValueCopy(t *testing.T) {
+	values := []interface{}{
+		"string",
+		10,
+		42,
+		true,
+		false,
+		uint16(16),
+	}
+
+	for idx := range values {
+		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
+			ptr := &values[idx]
+			ptrCopy := PtrValueCopy(ptr)
+
+			assert.NotSame(t, ptr, ptrCopy)
+			assert.Equal(t, *ptr, *ptrCopy)
+		})
+	}
 }
