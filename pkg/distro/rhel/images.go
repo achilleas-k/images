@@ -36,14 +36,10 @@ func osCustomizations(
 	if t.Bootable || t.RPMOSTree {
 		osc.KernelName = c.GetKernel().Name
 
-		var kernelOptions []string
-		if t.KernelOptions != "" {
-			kernelOptions = append(kernelOptions, t.KernelOptions)
-		}
+		osc.KernelOptionsAppend = 
 		if bpKernel := c.GetKernel(); bpKernel.Append != "" {
 			kernelOptions = append(kernelOptions, bpKernel.Append)
 		}
-		osc.KernelOptionsAppend = kernelOptions
 		if imageConfig.KernelOptionsBootloader != nil {
 			osc.KernelOptionsBootloader = *imageConfig.KernelOptionsBootloader
 		}

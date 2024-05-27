@@ -11,6 +11,7 @@ import (
 	"github.com/osbuild/images/internal/workload"
 	"github.com/osbuild/images/pkg/blueprint"
 	"github.com/osbuild/images/pkg/container"
+	"github.com/osbuild/images/pkg/customizations/kargs"
 	"github.com/osbuild/images/pkg/disk"
 	"github.com/osbuild/images/pkg/distro"
 	"github.com/osbuild/images/pkg/image"
@@ -70,7 +71,7 @@ type ImageType struct {
 	Compression            string // TODO: remove from image definition and make it a transport option
 	DefaultImageConfig     *distro.ImageConfig
 	DefaultInstallerConfig *distro.InstallerConfig
-	KernelOptions          string
+	KernelOptions          *kargs.Options
 	DefaultSize            uint64
 
 	// bootISO: installable ISO

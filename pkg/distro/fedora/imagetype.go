@@ -10,6 +10,7 @@ import (
 	"github.com/osbuild/images/internal/workload"
 	"github.com/osbuild/images/pkg/blueprint"
 	"github.com/osbuild/images/pkg/container"
+	"github.com/osbuild/images/pkg/customizations/kargs"
 	"github.com/osbuild/images/pkg/customizations/oscap"
 	"github.com/osbuild/images/pkg/disk"
 	"github.com/osbuild/images/pkg/distro"
@@ -39,7 +40,7 @@ type imageType struct {
 	mimeType           string
 	packageSets        map[string]packageSetFunc
 	defaultImageConfig *distro.ImageConfig
-	kernelOptions      string
+	kernelOptions      kargs.Options
 	defaultSize        uint64
 	buildPipelines     []string
 	payloadPipelines   []string

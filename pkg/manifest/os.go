@@ -12,6 +12,7 @@ import (
 	"github.com/osbuild/images/pkg/container"
 	"github.com/osbuild/images/pkg/customizations/bootc"
 	"github.com/osbuild/images/pkg/customizations/fsnode"
+	"github.com/osbuild/images/pkg/customizations/kargs"
 	"github.com/osbuild/images/pkg/customizations/shell"
 	"github.com/osbuild/images/pkg/customizations/users"
 	"github.com/osbuild/images/pkg/disk"
@@ -54,7 +55,7 @@ type OSCustomizations struct {
 	KernelName string
 
 	// KernelOptionsAppend are appended to the kernel commandline
-	KernelOptionsAppend []string
+	KernelOptionsAppend []kargs.Options
 
 	// KernelOptionsBootloader controls whether kernel command line options
 	// should be specified in the bootloader grubenv configuration. Otherwise
