@@ -10,6 +10,7 @@ import (
 	"github.com/osbuild/images/internal/cmdutil"
 	"github.com/osbuild/images/internal/common"
 	"github.com/osbuild/images/pkg/disk"
+	"github.com/osbuild/images/pkg/osbuild"
 )
 
 var basePt = disk.PartitionTable{
@@ -65,24 +66,9 @@ var basePt = disk.PartitionTable{
 	},
 }
 
-// Serializable version of the partition table that is used for formatting the
-// output of this command.
-type partitionTable struct {
-	Size       uint64 `json:"size"`
-	UUID       string `json:"uuid"`
-	Type       string `json:"type"`
-	SectorSize uint64 `json:"sector_size"`
-
-	Partitions []partition
-}
-
-type partition struct {
-	Start    uint64 `json:"start"`
-	Size     uint64 `json:"size"`
-	Type     string `json:"type"`
-	Bootable bool   `json:"bootable"`
-
-	UUID string `json:"uuid"`
+type otkGenPartitionsJSON struct {
+	PartitionTable *disk.PartitionTable `json:"internal-partition-table"`
+	KernelOptsList []string             `json:"kernel_opts_list"`
 }
 
 func main() {
@@ -102,9 +88,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	ptJson, err := json.Marshal(pt)
+	kernelOptions := osbuild.GenImageKernelOptions(pt)
+	otkPart := otkGenPartitionsJSON{
+		PartitionTable: pt,
+		KernelOptsList: kernelOptions,
+	}
+	ptJson, err := json.Marshal(otkPart)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to martial partition table: %s\n", err.Error())
 	}
-	fmt.Println(string(ptJson))
+
+	fmt.Printf("%s\n", ptJson)
 }
