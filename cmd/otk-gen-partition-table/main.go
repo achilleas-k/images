@@ -66,37 +66,52 @@ var basePt = disk.PartitionTable{
 	},
 }
 
-type otkGenPartitionsJSON struct {
+type otkGenPartitionInput struct {
+	TotalSize uint64 `json:"total_size"`
+}
+
+type otkGenPartitionsOutput struct {
 	PartitionTable *disk.PartitionTable `json:"internal-partition-table"`
 	KernelOptsList []string             `json:"kernel_opts_list"`
 }
 
-func main() {
+func run() error {
+	var genPartInput otkGenPartitionInput
+	if err := json.NewDecoder(os.Stdin).Decode(&genPartInput); err != nil {
+		return err
+	}
+
 	rngSeed, err := cmdutil.SeedArgFor(&buildconfig.BuildConfig{}, "", "", "")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
-		os.Exit(1)
+		return err
 	}
 	source := rand.NewSource(rngSeed)
 	// math/rand is good enough in this case
 	/* #nosec G404 */
 	rng := rand.New(source)
 
-	pt, err := disk.NewPartitionTable(&basePt, nil, 0, disk.DefaultPartitioningMode, nil, rng)
+	pt, err := disk.NewPartitionTable(&basePt, nil, genPartInput.TotalSize, disk.DefaultPartitioningMode, nil, rng)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
-		os.Exit(1)
+		return err
 	}
 
 	kernelOptions := osbuild.GenImageKernelOptions(pt)
-	otkPart := otkGenPartitionsJSON{
+	otkPart := otkGenPartitionsOutput{
 		PartitionTable: pt,
 		KernelOptsList: kernelOptions,
 	}
 	ptJson, err := json.Marshal(otkPart)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to martial partition table: %s\n", err.Error())
+		return fmt.Errorf("failed to martial partition table: %w\n", err)
 	}
 
 	fmt.Printf("%s\n", ptJson)
+	return nil
+}
+
+func main() {
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v", err.Error())
+		os.Exit(1)
+	}
 }
