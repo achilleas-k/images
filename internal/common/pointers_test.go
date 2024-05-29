@@ -45,4 +45,14 @@ func TestPtrValueCopy(t *testing.T) {
 			assert.Equal(t, *ptr, *ptrCopy)
 		})
 	}
+
+	slc := []string{"1", "2", "3"}
+	slcPtr := &slc
+	slcPtrCopy := PtrValueCopy(slcPtr)
+	assert.NotSame(t, slcPtr, slcPtrCopy)
+	assert.Equal(t, *slcPtr, *slcPtrCopy)
+
+	slc[2] = "4"
+	assert.Equal(t, *slcPtr, slc)
+	assert.Equal(t, *slcPtr, *slcPtrCopy)
 }

@@ -3,6 +3,9 @@ package kargs
 import (
 	"fmt"
 	"strings"
+
+	"github.com/osbuild/images/internal/common"
+	"golang.org/x/exp/slices"
 )
 
 type RootPerms string
@@ -113,4 +116,18 @@ func (o Options) StringList() []string {
 
 func (o Options) String() string {
 	return strings.Join(o.StringList(), " ")
+}
+
+func (o Options) Copy() Options {
+	return Options{
+		Biosdevname:       common.PtrValueCopy(o.Biosdevname),
+		Console:           slices.Clone(o.Console),
+		Crashkernel:       common.PtrValueCopy(o.Crashkernel),
+		Loglevel:          common.PtrValueCopy(o.Loglevel),
+		ModprobeBlacklist: slices.Clone(o.ModprobeBlacklist),
+		NetIfnames:        common.PtrValueCopy(o.NetIfnames),
+		NoTimerCheck:      o.NoTimerCheck,
+		RootPerms:         o.RootPerms,
+		Extra:             slices.Clone(o.Extra),
+	}
 }
