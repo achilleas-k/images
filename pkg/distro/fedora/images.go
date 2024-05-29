@@ -3,6 +3,7 @@ package fedora
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 
 	"github.com/osbuild/images/internal/common"
 	"github.com/osbuild/images/internal/workload"
@@ -12,6 +13,7 @@ import (
 	"github.com/osbuild/images/pkg/customizations/fdo"
 	"github.com/osbuild/images/pkg/customizations/fsnode"
 	"github.com/osbuild/images/pkg/customizations/ignition"
+	"github.com/osbuild/images/pkg/customizations/kargs"
 	"github.com/osbuild/images/pkg/customizations/kickstart"
 	"github.com/osbuild/images/pkg/customizations/oscap"
 	"github.com/osbuild/images/pkg/customizations/users"
@@ -38,12 +40,12 @@ func osCustomizations(
 	if t.bootable || t.rpmOstree {
 		osc.KernelName = c.GetKernel().Name
 
-		var kernelOptions []string
-		if t.kernelOptions != "" {
-			kernelOptions = append(kernelOptions, t.kernelOptions)
+		kernelOptions := kargs.Options{}
+		if t.kernelOptions != nil {
+			kernelOptions = *t.kernelOptions
 		}
 		if bpKernel := c.GetKernel(); bpKernel.Append != "" {
-			kernelOptions = append(kernelOptions, bpKernel.Append)
+			kernelOptions.Extra = strings.Split(bpKernel.Append, " ") // TODO: parse stuff
 		}
 		osc.KernelOptionsAppend = kernelOptions
 	}
@@ -274,8 +276,7 @@ func ostreeDeploymentCustomizations(
 	imageConfig := t.getDefaultImageConfig()
 	deploymentConf := manifest.OSTreeDeploymentCustomizations{}
 
-	var kernelOptions []string
-	if t.kernelOptions != "" {
+	if t.kernelOptions != nil {
 		kernelOptions = append(kernelOptions, t.kernelOptions)
 	}
 	if bpKernel := c.GetKernel(); bpKernel != nil && bpKernel.Append != "" {

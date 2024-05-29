@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/osbuild/images/internal/common"
+	"github.com/osbuild/images/pkg/customizations/kargs"
 	"github.com/osbuild/images/pkg/disk"
 )
 
@@ -127,7 +128,7 @@ func MakeGrub2MenuEntries(id string, kernelVer string, product GRUB2Product, res
 
 func NewGrub2LegacyStageOptions(cfg *GRUB2Config,
 	pt *disk.PartitionTable,
-	kernelOptions []string,
+	kernelOptions kargs.Options,
 	legacy string,
 	uefi string,
 	entries []GRUB2MenuEntry) *GRUB2LegacyStageOptions {
@@ -137,7 +138,7 @@ func NewGrub2LegacyStageOptions(cfg *GRUB2Config,
 		panic("root filesystem must be defined for grub2 stage, this is a programming error")
 	}
 
-	kopts := strings.Join(kernelOptions, " ")
+	kopts := kernelOptions.String()
 
 	rootFsUUID := uuid.MustParse(rootFs.GetFSSpec().UUID)
 	stageOptions := GRUB2LegacyStageOptions{

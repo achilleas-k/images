@@ -3,6 +3,7 @@ package rhel
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 
 	"github.com/osbuild/images/internal/workload"
 	"github.com/osbuild/images/pkg/blueprint"
@@ -10,6 +11,7 @@ import (
 	"github.com/osbuild/images/pkg/customizations/fdo"
 	"github.com/osbuild/images/pkg/customizations/fsnode"
 	"github.com/osbuild/images/pkg/customizations/ignition"
+	"github.com/osbuild/images/pkg/customizations/kargs"
 	"github.com/osbuild/images/pkg/customizations/kickstart"
 	"github.com/osbuild/images/pkg/customizations/oscap"
 	"github.com/osbuild/images/pkg/customizations/users"
@@ -36,9 +38,12 @@ func osCustomizations(
 	if t.Bootable || t.RPMOSTree {
 		osc.KernelName = c.GetKernel().Name
 
-		osc.KernelOptionsAppend = 
+		kernelOptions := kargs.Options{}
+		if t.KernelOptions != nil {
+			kernelOptions = *t.KernelOptions
+		}
 		if bpKernel := c.GetKernel(); bpKernel.Append != "" {
-			kernelOptions = append(kernelOptions, bpKernel.Append)
+			kernelOptions.Extra = strings.Split(bpKernel.Append, " ") // TODO: parse stuff
 		}
 		if imageConfig.KernelOptionsBootloader != nil {
 			osc.KernelOptionsBootloader = *imageConfig.KernelOptionsBootloader
@@ -302,12 +307,9 @@ func ostreeDeploymentCustomizations(
 	imageConfig := t.getDefaultImageConfig()
 	deploymentConf := manifest.OSTreeDeploymentCustomizations{}
 
-	var kernelOptions []string
-	if t.KernelOptions != "" {
-		kernelOptions = append(kernelOptions, t.KernelOptions)
-	}
+	kernelOptions := t.KernelOptions
 	if bpKernel := c.GetKernel(); bpKernel != nil && bpKernel.Append != "" {
-		kernelOptions = append(kernelOptions, bpKernel.Append)
+		kernelOptions.Extra = strings.Split(bpKernel.Append, " ") // TODO: parse stuff
 	}
 
 	if imageConfig.IgnitionPlatform != nil {
@@ -317,11 +319,11 @@ func ostreeDeploymentCustomizations(
 	switch deploymentConf.IgnitionPlatform {
 	case "metal":
 		if bpIgnition := c.GetIgnition(); bpIgnition != nil && bpIgnition.FirstBoot != nil && bpIgnition.FirstBoot.ProvisioningURL != "" {
-			kernelOptions = append(kernelOptions, "ignition.config.url="+bpIgnition.FirstBoot.ProvisioningURL)
+			kernelOptions.Extra = append(kernelOptions.Extra, "ignition.config.url="+bpIgnition.FirstBoot.ProvisioningURL)
 		}
 	}
 
-	deploymentConf.KernelOptionsAppend = kernelOptions
+	deploymentConf.KernelOptionsAppend = kernelOptions.StringList()
 
 	deploymentConf.FIPS = c.GetFIPS()
 

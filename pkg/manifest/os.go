@@ -3,7 +3,6 @@ package manifest
 import (
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	"github.com/osbuild/images/internal/common"
 	"github.com/osbuild/images/internal/environment"
@@ -55,7 +54,7 @@ type OSCustomizations struct {
 	KernelName string
 
 	// KernelOptionsAppend are appended to the kernel commandline
-	KernelOptionsAppend []kargs.Options
+	KernelOptionsAppend kargs.Options
 
 	// KernelOptionsBootloader controls whether kernel command line options
 	// should be specified in the bootloader grubenv configuration. Otherwise
@@ -654,12 +653,13 @@ func (p *OS) serialize() osbuild.Pipeline {
 		pipeline.AddStage(osbuild.NewUdevRulesStage(udevRules))
 	}
 
+	kernelOptions := p.KernelOptionsAppend
 	if pt := p.PartitionTable; pt != nil {
-		kernelOptions := osbuild.GenImageKernelOptions(p.PartitionTable)
-		kernelOptions = append(kernelOptions, p.KernelOptionsAppend...)
+		ptKernelOptions := osbuild.GenImageKernelOptions(p.PartitionTable)
+		kernelOptions.Extra = append(kernelOptions.Extra, ptKernelOptions...)
 
 		if p.FIPS {
-			kernelOptions = append(kernelOptions, osbuild.GenFIPSKernelOptions(p.PartitionTable)...)
+			kernelOptions.Extra = append(kernelOptions.Extra, osbuild.GenFIPSKernelOptions(p.PartitionTable)...)
 			pipeline.AddStage(osbuild.NewDracutStage(&osbuild.DracutStageOptions{
 				Kernel:     []string{p.kernelVer},
 				AddModules: []string{"fips"},
@@ -667,7 +667,7 @@ func (p *OS) serialize() osbuild.Pipeline {
 		}
 
 		if !p.KernelOptionsBootloader || p.platform.GetArch() == arch.ARCH_S390X {
-			pipeline = prependKernelCmdlineStage(pipeline, strings.Join(kernelOptions, " "), pt)
+			pipeline = prependKernelCmdlineStage(pipeline, kernelOptions.String(), pt)
 		}
 
 		pipeline.AddStage(osbuild.NewFSTabStage(osbuild.NewFSTabStageOptions(pt)))
@@ -700,7 +700,7 @@ func (p *OS) serialize() osbuild.Pipeline {
 				)
 			} else {
 				options := osbuild.NewGrub2StageOptions(pt,
-					strings.Join(kernelOptions, " "),
+					kernelOptions.String(),
 					p.kernelVer,
 					p.platform.GetUEFIVendor() != "",
 					p.platform.GetBIOSPlatform(),

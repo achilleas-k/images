@@ -234,7 +234,7 @@ var (
 		payloadPipelines:    []string{"ostree-deployment", "image", "xz", "coi-tree", "efiboot-tree", "bootiso-tree", "bootiso"},
 		exports:             []string{"bootiso"},
 		basePartitionTables: iotSimplifiedInstallerPartitionTables,
-		kernelOptions:       ostreeDeploymentKernelOptions.String(),
+		kernelOptions:       ostreeDeploymentKernelOptions,
 	}
 
 	iotRawImgType = imageType{
@@ -261,7 +261,7 @@ var (
 		payloadPipelines:    []string{"ostree-deployment", "image", "xz"},
 		exports:             []string{"xz"},
 		basePartitionTables: iotBasePartitionTables,
-		kernelOptions:       ostreeDeploymentKernelOptions.String(),
+		kernelOptions:       ostreeDeploymentKernelOptions,
 
 		// Passing an empty map into the required partition sizes disables the
 		// default partition sizes normally set so our `basePartitionTables` can
@@ -291,7 +291,7 @@ var (
 		payloadPipelines:    []string{"ostree-deployment", "image", "qcow2"},
 		exports:             []string{"qcow2"},
 		basePartitionTables: iotBasePartitionTables,
-		kernelOptions:       ostreeDeploymentKernelOptions.String(),
+		kernelOptions:       ostreeDeploymentKernelOptions,
 	}
 
 	qcow2ImgType = imageType{
@@ -305,7 +305,7 @@ var (
 		defaultImageConfig: &distro.ImageConfig{
 			DefaultTarget: common.ToPtr("multi-user.target"),
 		},
-		kernelOptions:       cloudKernelOptions.String(),
+		kernelOptions:       cloudKernelOptions,
 		bootable:            true,
 		defaultSize:         5 * common.GibiByte,
 		image:               diskImage,
@@ -333,7 +333,7 @@ var (
 			osPkgsKey: vmdkCommonPackageSet,
 		},
 		defaultImageConfig:  vmdkDefaultImageConfig,
-		kernelOptions:       cloudKernelOptions.String(),
+		kernelOptions:       cloudKernelOptions,
 		bootable:            true,
 		defaultSize:         2 * common.GibiByte,
 		image:               diskImage,
@@ -351,7 +351,7 @@ var (
 			osPkgsKey: vmdkCommonPackageSet,
 		},
 		defaultImageConfig:  vmdkDefaultImageConfig,
-		kernelOptions:       cloudKernelOptions.String(),
+		kernelOptions:       cloudKernelOptions,
 		bootable:            true,
 		defaultSize:         2 * common.GibiByte,
 		image:               diskImage,
@@ -425,7 +425,7 @@ var (
 			},
 		},
 		rpmOstree:           false,
-		kernelOptions:       defaultKernelOptions.String(),
+		kernelOptions:       defaultKernelOptions,
 		bootable:            true,
 		defaultSize:         2 * common.GibiByte,
 		image:               diskImage,

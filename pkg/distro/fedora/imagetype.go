@@ -40,7 +40,7 @@ type imageType struct {
 	mimeType           string
 	packageSets        map[string]packageSetFunc
 	defaultImageConfig *distro.ImageConfig
-	kernelOptions      kargs.Options
+	kernelOptions      *kargs.Options
 	defaultSize        uint64
 	buildPipelines     []string
 	payloadPipelines   []string
