@@ -71,7 +71,7 @@ func boolPtrToString(b *bool) string {
 	return "0"
 }
 
-func (o Options) String() string {
+func (o Options) StringList() []string {
 	optionsStr := []string{}
 
 	if biosdevname := boolPtrToString(o.Biosdevname); biosdevname != "" {
@@ -108,5 +108,9 @@ func (o Options) String() string {
 
 	optionsStr = append(optionsStr, o.Extra...)
 
-	return strings.Join(optionsStr, " ")
+	return optionsStr
+}
+
+func (o Options) String() string {
+	return strings.Join(o.StringList(), " ")
 }
