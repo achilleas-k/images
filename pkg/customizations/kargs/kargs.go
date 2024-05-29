@@ -118,6 +118,46 @@ func (o Options) String() string {
 	return strings.Join(o.StringList(), " ")
 }
 
+// Update properties in the receiver with values from the argument. Properties
+// with nil or empty values in the argument do not affect the properties in the
+// receiver. String slices (Console, ModprobeBlacklist, Extra) are
+// concatenated.
+func (o *Options) Update(newOpts *Options) {
+	if o == nil {
+		o = &Options{}
+	}
+
+	if newOpts.Biosdevname != nil {
+		o.Biosdevname = newOpts.Biosdevname
+	}
+
+	o.Console = append(o.Console, newOpts.Console...)
+
+	if newOpts.Crashkernel != nil {
+		o.Crashkernel = newOpts.Crashkernel
+	}
+
+	if newOpts.Loglevel != nil {
+		o.Loglevel = newOpts.Loglevel
+	}
+
+	o.ModprobeBlacklist = append(o.ModprobeBlacklist, newOpts.ModprobeBlacklist...)
+
+	if newOpts.NetIfnames != nil {
+		o.NetIfnames = newOpts.NetIfnames
+	}
+
+	if newOpts.NoTimerCheck != nil {
+		o.NoTimerCheck = newOpts.NoTimerCheck
+	}
+
+	if newOpts.RootPerms != RootPermsUnset {
+		o.RootPerms = newOpts.RootPerms
+	}
+
+	o.Extra = append(o.Extra, newOpts.Extra...)
+}
+
 func (o Options) Copy() Options {
 	return Options{
 		Biosdevname:       common.PtrValueCopy(o.Biosdevname),
