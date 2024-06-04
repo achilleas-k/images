@@ -12,11 +12,17 @@ import (
 
 // keep in sync with "otk-gen-partition-table"
 type Input struct {
-	Internal InputInternal `json:"internal"`
+	Internal      InputInternal      `json:"internal"`
+	Modifications InputModifications `json:"modifications"`
 }
 
 type InputInternal struct {
 	PartitionTable *disk.PartitionTable `json:"partition-table"`
+}
+
+type InputModifications struct {
+	// XXX: or "basename"?
+	Filename string `json:"filename"`
 }
 
 func makeImagePrepareStages(inp Input, filename string) (stages []*osbuild.Stage, err error) {
@@ -38,8 +44,10 @@ func run(r io.Reader, w io.Writer) error {
 		return err
 	}
 
-	// XXX: make configurable via "modification"
 	fname := "disk.img"
+	if inp.Modifications.Filename != "" {
+		fname = inp.Modifications.Filename
+	}
 	stages, err := makeImagePrepareStages(inp, fname)
 	if err != nil {
 		return fmt.Errorf("cannot make partition stages: %w", err)
