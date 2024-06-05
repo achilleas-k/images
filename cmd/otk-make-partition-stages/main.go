@@ -19,7 +19,6 @@ type Input struct {
 type InputInternal = otk.PartitionInternal
 
 type InputModifications struct {
-	// XXX: or "basename"?
 	Filename string `json:"filename"`
 }
 
@@ -30,7 +29,8 @@ func makeImagePrepareStages(inp Input, filename string) (stages []*osbuild.Stage
 		}
 	}()
 
-	// XXX: would we ever want to change that?
+	// rhel7 uses PTSgdisk, if we ever need to support this, make this
+	// configurable
 	partTool := osbuild.PTSfdisk
 	stages = osbuild.GenImagePrepareStages(inp.Internal.PartitionTable, filename, partTool)
 	return stages, nil
