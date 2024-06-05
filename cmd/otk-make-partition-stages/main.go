@@ -6,19 +6,17 @@ import (
 	"io"
 	"os"
 
-	"github.com/osbuild/images/pkg/disk"
 	"github.com/osbuild/images/pkg/osbuild"
+
+	"github.com/osbuild/images/internal/otk"
 )
 
-// keep in sync with "otk-gen-partition-table"
 type Input struct {
 	Internal      InputInternal      `json:"internal"`
 	Modifications InputModifications `json:"modifications"`
 }
 
-type InputInternal struct {
-	PartitionTable *disk.PartitionTable `json:"partition-table"`
-}
+type InputInternal = otk.PartitionInternal
 
 type InputModifications struct {
 	// XXX: or "basename"?
