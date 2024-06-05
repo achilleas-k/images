@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -15,11 +16,32 @@ type Input struct {
 }
 
 type Output struct {
-	Mounts  []osbuild.Mount           `json:"mounts"`
-	Devices map[string]osbuild.Device `json:"devices"`
+	RootMountName string                    `json:"root_mount_name"`
+	Mounts        []osbuild.Mount           `json:"mounts"`
+	Devices       map[string]osbuild.Device `json:"devices"`
 }
 
 func run(r io.Reader, w io.Writer) error {
+	var inp Input
+	if err := json.NewDecoder(r).Decode(&inp); err != nil {
+		return err
+	}
+
+	rootMntName, mounts, devices, err := osbuild.GenMountsDevicesFromPT(inp.Filename, inp.Internal.PartitionTable)
+	if err != nil {
+		return err
+	}
+
+	out := Output{
+		RootMountName: rootMntName,
+		Mounts:        mounts,
+		Devices:       devices,
+	}
+	outputJson, err := json.MarshalIndent(out, "", "  ")
+	if err != nil {
+		return fmt.Errorf("cannot marshal response: %w", err)
+	}
+	fmt.Fprintf(w, "%s\n", outputJson)
 	return nil
 }
 
