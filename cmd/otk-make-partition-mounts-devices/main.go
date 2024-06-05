@@ -10,6 +10,7 @@ import (
 )
 
 type Input struct {
+	Filename string                `json:"filename"`
 	Internal otk.PartitionInternal `json:"internal"`
 }
 
