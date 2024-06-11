@@ -14,6 +14,7 @@ type User struct {
 	GID                *int
 	ExpireDate         *int
 	ForcePasswordReset *bool
+	SudoNopasswd       *bool
 }
 
 type Group struct {

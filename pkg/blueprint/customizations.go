@@ -74,6 +74,7 @@ type UserCustomization struct {
 	GID                *int     `json:"gid,omitempty" toml:"gid,omitempty"`
 	ExpireDate         *int     `json:"expiredate,omitempty" toml:"expiredate,omitempty"`
 	ForcePasswordReset *bool    `json:"force_password_reset,omitempty" toml:"force_password_reset,omitempty"`
+	SudoNopasswd       *bool    `json:"sudo-nopasswd,omitempty" toml:"sudo-nopasswd,omitempty"`
 }
 
 type GroupCustomization struct {
