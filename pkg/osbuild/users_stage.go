@@ -1,7 +1,11 @@
 package osbuild
 
 import (
+	"fmt"
+	"path/filepath"
+
 	"github.com/osbuild/images/pkg/crypt"
+	"github.com/osbuild/images/pkg/customizations/fsnode"
 	"github.com/osbuild/images/pkg/customizations/users"
 )
 
@@ -80,4 +84,25 @@ func GenUsersStage(users []users.User, omitKey bool) (*Stage, error) {
 		return nil, err
 	}
 	return NewUsersStage(options), nil
+}
+
+func GenSudoersFilesStages(users []users.User) ([]*Stage, error) {
+	if len(users) == 0 {
+		return nil, nil
+	}
+
+	files := make([]*fsnode.File, 0, len(users))
+	for _, user := range users {
+		if user.SudoNopasswd == nil || !*user.SudoNopasswd {
+			continue
+		}
+		sudoersPath := filepath.Join("/etc/sudoers.d", user.Name)
+		sudoersContent := fmt.Sprintf("%s\tALL=(ALL)\tNOPASSWD: ALL", user.Name)
+		filenode, err := fsnode.NewFile(sudoersPath, nil, "root", "root", []byte(sudoersContent))
+		if err != nil {
+			return nil, fmt.Errorf("sudoers dropin file creation failed: %w", err)
+		}
+		files = append(files, filenode)
+	}
+	return GenFileNodesStages(files), nil
 }
