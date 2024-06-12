@@ -1,6 +1,8 @@
 package osbuild
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -98,4 +100,84 @@ func TestGenUsersStageSameAsNewUsersStageOptions(t *testing.T) {
 	// and (for good measure, not really needed) check that both gen
 	// the same
 	assert.Equal(t, usrStageOptions, opts)
+}
+
+func TestGenSudoersFilesStages(t *testing.T) {
+	type testCase struct {
+		users  []users.User
+		stages []*Stage
+		expErr error
+	}
+
+	adminFileSum := sha256.Sum256([]byte("admin\tALL=(ALL)\tNOPASSWD: ALL"))
+
+	testCases := map[string]testCase{
+		"happy1": testCase{
+			users: []users.User{
+				{
+					Name:         "admin",
+					SudoNopasswd: common.ToPtr(true),
+				},
+				{
+					Name:         "notadmin",
+					SudoNopasswd: common.ToPtr(false),
+				},
+				{
+					Name: "some-user",
+				},
+			},
+			stages: []*Stage{
+				{
+					Type: "org.osbuild.copy",
+					Options: &CopyStageOptions{
+						Paths: []CopyStagePath{
+							{
+								From:              fmt.Sprintf("input://file-%[1]x/sha256:%[1]x", adminFileSum),
+								To:                "tree:///etc/sudoers.d/admin",
+								RemoveDestination: true,
+							},
+						},
+					},
+					Inputs: &CopyStageFilesInputs{
+						fmt.Sprintf("file-%x", adminFileSum): {
+							inputCommon: inputCommon{
+								Type:   "org.osbuild.files",
+								Origin: "org.osbuild.source",
+							},
+							References: &FilesInputSourceArrayRef{
+								{
+									ID: fmt.Sprintf("sha256:%x", adminFileSum),
+								},
+							},
+						},
+					},
+				},
+				{
+					Type: "org.osbuild.chown",
+					Options: &ChownStageOptions{
+						Items: map[string]ChownStagePathOptions{
+							"/etc/sudoers.d/admin": {
+								User:      "root",
+								Group:     "root",
+								Recursive: false,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			stages, err := GenSudoersFilesStages(tc.users)
+			if tc.expErr != nil {
+				assert.Equal(tc.expErr, err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.stages, stages)
+			}
+		})
+	}
 }
