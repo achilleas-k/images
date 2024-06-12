@@ -342,6 +342,12 @@ func (p *OSTreeDeployment) serialize() osbuild.Pipeline {
 		}
 		usersStage.MountOSTree(p.osName, ref, 0)
 		pipeline.AddStage(usersStage)
+
+		passwordlessSudoStages, err := osbuild.GenSudoersFilesStages(p.Users)
+		if err != nil {
+			panic(fmt.Sprintf("failed to create sudoers dropin files: %v", err))
+		}
+		pipeline.AddStages(passwordlessSudoStages...)
 	}
 
 	if len(p.Groups) > 0 {

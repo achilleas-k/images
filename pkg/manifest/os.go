@@ -491,6 +491,11 @@ func (p *OS) serialize() osbuild.Pipeline {
 			}
 			pipeline.AddStage(usersStage)
 		}
+		passwordlessSudoStages, err := osbuild.GenSudoersFilesStages(p.Users)
+		if err != nil {
+			panic(fmt.Sprintf("failed to create sudoers dropin files: %v", err))
+		}
+		pipeline.AddStages(passwordlessSudoStages...)
 	}
 
 	if p.Firewall != nil {

@@ -201,6 +201,12 @@ func (p *RawBootcImage) serialize() osbuild.Pipeline {
 		usersStage.Devices = devices
 		pipeline.AddStage(usersStage)
 
+		passwordlessSudoStages, err := osbuild.GenSudoersFilesStages(p.Users)
+		if err != nil {
+			panic(fmt.Sprintf("failed to create sudoers dropin files: %v", err))
+		}
+		pipeline.AddStages(passwordlessSudoStages...)
+
 		// add selinux
 		if p.SELinux != "" {
 			opts := &osbuild.SELinuxStageOptions{
