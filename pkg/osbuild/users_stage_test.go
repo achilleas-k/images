@@ -109,7 +109,48 @@ func TestGenSudoersFilesStages(t *testing.T) {
 		expErr error
 	}
 
-	adminFileSum := sha256.Sum256([]byte("admin\tALL=(ALL)\tNOPASSWD: ALL"))
+	makeExpectedStages := func(usernames ...string) []*Stage {
+		copyStageOptions := CopyStageOptions{}
+		copyStageInputs := CopyStageFilesInputs{}
+		chownStageOptions := ChownStageOptions{Items: map[string]ChownStagePathOptions{}}
+
+		for _, username := range usernames {
+			fileSum := sha256.Sum256([]byte(fmt.Sprintf("%s\tALL=(ALL)\tNOPASSWD: ALL", username)))
+			copyStageOptions.Paths = append(copyStageOptions.Paths, CopyStagePath{
+				From:              fmt.Sprintf("input://file-%[1]x/sha256:%[1]x", fileSum),
+				To:                "tree:///etc/sudoers.d/" + username,
+				RemoveDestination: true,
+			})
+			copyStageInputs[fmt.Sprintf("file-%x", fileSum)] = &FilesInput{
+				inputCommon: inputCommon{
+					Type:   "org.osbuild.files",
+					Origin: "org.osbuild.source",
+				},
+				References: &FilesInputSourceArrayRef{
+					{
+						ID: fmt.Sprintf("sha256:%x", fileSum),
+					},
+				},
+			}
+
+			chownStageOptions.Items["/etc/sudoers.d/"+username] = ChownStagePathOptions{
+				User:      "root",
+				Group:     "root",
+				Recursive: false,
+			}
+		}
+		return []*Stage{
+			&Stage{
+				Type:    "org.osbuild.copy",
+				Options: &copyStageOptions,
+				Inputs:  &copyStageInputs,
+			},
+			&Stage{
+				Type:    "org.osbuild.chown",
+				Options: &chownStageOptions,
+			},
+		}
+	}
 
 	testCases := map[string]testCase{
 		"happy1": testCase{
@@ -126,45 +167,7 @@ func TestGenSudoersFilesStages(t *testing.T) {
 					Name: "some-user",
 				},
 			},
-			stages: []*Stage{
-				{
-					Type: "org.osbuild.copy",
-					Options: &CopyStageOptions{
-						Paths: []CopyStagePath{
-							{
-								From:              fmt.Sprintf("input://file-%[1]x/sha256:%[1]x", adminFileSum),
-								To:                "tree:///etc/sudoers.d/admin",
-								RemoveDestination: true,
-							},
-						},
-					},
-					Inputs: &CopyStageFilesInputs{
-						fmt.Sprintf("file-%x", adminFileSum): {
-							inputCommon: inputCommon{
-								Type:   "org.osbuild.files",
-								Origin: "org.osbuild.source",
-							},
-							References: &FilesInputSourceArrayRef{
-								{
-									ID: fmt.Sprintf("sha256:%x", adminFileSum),
-								},
-							},
-						},
-					},
-				},
-				{
-					Type: "org.osbuild.chown",
-					Options: &ChownStageOptions{
-						Items: map[string]ChownStagePathOptions{
-							"/etc/sudoers.d/admin": {
-								User:      "root",
-								Group:     "root",
-								Recursive: false,
-							},
-						},
-					},
-				},
-			},
+			stages: makeExpectedStages("admin"),
 		},
 	}
 
