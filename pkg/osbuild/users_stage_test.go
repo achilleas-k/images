@@ -169,6 +169,53 @@ func TestGenSudoersFilesStages(t *testing.T) {
 			},
 			stages: makeExpectedStages("admin"),
 		},
+		"happy2": testCase{
+			users: []users.User{
+				{
+					Name:         "admin",
+					SudoNopasswd: common.ToPtr(true),
+				},
+				{
+					Name:         "notadmin",
+					SudoNopasswd: common.ToPtr(false),
+				},
+				{
+					Name:         "some-user",
+					SudoNopasswd: common.ToPtr(true),
+				},
+			},
+			stages: makeExpectedStages("admin", "some-user"),
+		},
+		"oops-all-admins": testCase{
+			users: []users.User{
+				{
+					Name:         "achilleas",
+					SudoNopasswd: common.ToPtr(true),
+				},
+				{
+					Name:         "michael",
+					SudoNopasswd: common.ToPtr(true),
+				},
+				{
+					Name:         "ondrej",
+					SudoNopasswd: common.ToPtr(true),
+				},
+			},
+			stages: makeExpectedStages("achilleas", "michael", "ondrej"),
+		},
+		"adminless": testCase{
+			users: []users.User{
+				{
+					Name: "achilleas",
+				},
+				{
+					Name: "michael",
+				},
+				{
+					Name: "ondrej",
+				},
+			},
+		},
 	}
 
 	for name, tc := range testCases {
