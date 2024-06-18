@@ -178,3 +178,33 @@ func ExportsFallback() []string {
 func PayloadPackageSets() []string {
 	return []string{}
 }
+
+type ImageTypeConfig struct {
+	Name     string       `yaml:"name"`
+	Filename string       `yaml:"filename"`
+	Mimetype string       `yaml:"mimetype"`
+	Params   ConfigParams `yaml:"params"`
+}
+
+type ConfigParams struct {
+	Packages      rpmmd.PackageSet
+	DefaultTarget string             `yaml:"default-target"`
+	KernelOptions string             `yaml:"kernel-options"` // TODO: []string
+	Bootloader    ConfigBootloader   `yaml:"bootloader"`
+	Mode          string             `yaml:"mode"`
+	Partitioning  ConfigPartitioning `yaml:"partitioning"`
+	CloudInit     ConfigCloudInit    `yaml:"cloud-init"`
+	Repositories  string             `yaml:"repositories"`
+}
+
+type ConfigBootloader struct {
+	Type string `yaml:"type"`
+}
+
+type ConfigPartitioning struct {
+	DefaultSize string `yaml:"default-size"`
+}
+
+type ConfigCloudInit struct {
+	DefaultUser string `yaml:"default-user"`
+}
