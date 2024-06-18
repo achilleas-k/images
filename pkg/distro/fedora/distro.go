@@ -3,6 +3,7 @@ package fedora
 import (
 	"errors"
 	"fmt"
+	"os"
 	"sort"
 	"strconv"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/osbuild/images/pkg/platform"
 	"github.com/osbuild/images/pkg/rpmmd"
 	"github.com/osbuild/images/pkg/runner"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -583,6 +585,62 @@ func (a *architecture) addImageTypes(platform platform.Platform, imageTypes ...i
 	}
 }
 
+func (a *architecture) addExternalImageType(platform platform.Platform, path string) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	var cfg distro.ImageTypeConfig
+	if err := yaml.NewDecoder(f).Decode(&cfg); err != nil {
+		return err
+	}
+	size, err := common.DataSizeToUint64(cfg.Params.Partitioning.DefaultSize)
+	if err != nil {
+		return err
+	}
+	it := imageType{
+		name:        cfg.Name,
+		environment: &environment.KVM{}, // TODO: read from config
+		filename:    cfg.Filename,
+		mimeType:    cfg.Mimetype,
+		packageSets: map[string]packageSetFunc{
+			osPkgsKey: func(*imageType) rpmmd.PackageSet {
+
+				// TODO: repos can be an include and ready to go
+				repos, err := rpmmd.LoadRepositoriesFromFile(cfg.Params.Repositories)
+				if err != nil {
+					panic(err)
+				}
+				pkgSet := cfg.Params.Packages
+				pkgSet.Repositories = repos[a.name]
+				return pkgSet
+			},
+		},
+		defaultImageConfig: &distro.ImageConfig{
+			DefaultTarget: common.ToPtr(cfg.Params.DefaultTarget),
+		},
+		kernelOptions: cfg.Params.KernelOptions,
+		defaultSize:   size,
+		// TODO: pipeline names will be inferred from image kind
+		buildPipelines:   []string{"build"},
+		payloadPipelines: []string{"os", "image", "qcow2"},
+		exports:          []string{"qcow2"},
+		// TODO: image function is tied directly to image kind
+		image:               diskImage,
+		bootable:            true,
+		basePartitionTables: defaultBasePartitionTables,
+	}
+	// TODO: architecture will be defined in config and the method will not be an architecture method
+	it.arch = a
+	// TODO: platform will be defined in config
+	it.platform = platform
+	a.imageTypes[it.name] = &it
+
+	return nil
+}
+
 func (a *architecture) Distro() distro.Distro {
 	return a.distro
 }
@@ -653,9 +711,22 @@ func newDistro(version int) distro.Distro {
 				QCOW2Compat: "1.1",
 			},
 		},
-		qcow2ImgType,
+		// qcow2ImgType,  // commented out to test external image type loading
 		ociImgType,
 	)
+	if err := x86_64.addExternalImageType(
+		&platform.X86{
+			BIOS:       true,
+			UEFIVendor: "fedora",
+			BasePlatform: platform.BasePlatform{
+				ImageFormat: platform.FORMAT_QCOW2,
+				QCOW2Compat: "1.1",
+			},
+		},
+		"/home/achilleas/projects/osbuild/images/configs/fedora/x86_64/qcow2.yml",
+	); err != nil {
+		panic(err)
+	}
 	x86_64.addImageTypes(
 		&platform.X86{
 			BIOS:       true,
