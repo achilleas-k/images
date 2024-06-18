@@ -1,0 +1,30 @@
+---
+name: "qcow2"
+filename: "disk.qcow2"
+mimetype: "application/x-qemu-disk"
+params:
+  packages:
+    include:
+      # otk.include: cloud-base-set
+      - "@Fedora Cloud Server"
+      - "chrony"
+      - "langpacks-en"
+      # otk.include: qcow2-common-set
+      - "qemu-guest-agent"
+    exclude:
+      # otk.include: cloud-base-set
+      - "dracut-config-rescue"
+      - "firewalld"
+      - "geolite2-city"
+      - "geolite2-country"
+      - "plymouth"
+  default-target: "multi-user.target"
+  kernel-options: "ro no_timer_check console=ttyS0,115200n8 biosdevname=0 net.ifnames=0"  # otk.include: cloud-kernel-options
+  bootloader:
+    type: grub
+  mode: "hybrid"
+  partitioning:
+    default-size: "5 GiB"
+  repositories: "test/data/repositories/fedora-40.json"
+  cloud-init:
+    default-user: ec2-user
