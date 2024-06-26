@@ -13,7 +13,10 @@
 package manifest
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
+	"os/exec"
 
 	"github.com/osbuild/images/pkg/container"
 	"github.com/osbuild/images/pkg/osbuild"
@@ -72,6 +75,8 @@ type Manifest struct {
 	// generate. It is used for determining package names that differ between
 	// different distributions and version.
 	Distro Distro
+
+	OTKPath string
 }
 
 func New() Manifest {
@@ -139,6 +144,9 @@ func (m Manifest) GetOSTreeSourceSpecs() map[string][]ostree.SourceSpec {
 }
 
 func (m Manifest) Serialize(packageSets map[string][]rpmmd.PackageSpec, containerSpecs map[string][]container.Spec, ostreeCommits map[string][]ostree.CommitSpec, rpmRepos map[string][]rpmmd.RepoConfig) (OSBuildManifest, error) {
+	if m.OTKPath != "" {
+		return m.OTKSerialize()
+	}
 	pipelines := make([]osbuild.Pipeline, 0)
 	packages := make([]rpmmd.PackageSpec, 0)
 	commits := make([]ostree.CommitSpec, 0)
@@ -170,6 +178,19 @@ func (m Manifest) Serialize(packageSets map[string][]rpmmd.PackageSpec, containe
 			Sources:   sources,
 		},
 	)
+}
+
+func (m Manifest) OTKSerialize() (OSBuildManifest, error) {
+	cmd := exec.Command("otk", "compile", "--target=osbuild", m.OTKPath)
+	var stdoutBuffer bytes.Buffer
+	var stderrBuffer bytes.Buffer
+	cmd.Stdout = &stdoutBuffer
+	cmd.Stderr = &stderrBuffer
+	err := cmd.Run()
+	if err != nil {
+		return nil, fmt.Errorf("compiling omnifest: %v %s", err, stderrBuffer.String())
+	}
+	return OSBuildManifest(stdoutBuffer.Bytes()), nil
 }
 
 func (m Manifest) GetCheckpoints() []string {

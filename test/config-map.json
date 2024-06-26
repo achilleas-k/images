@@ -122,6 +122,7 @@
       "minimal-raw",
       "oci",
       "openstack",
+      "otk.qcow2",
       "ova",
       "qcow2",
       "tar",

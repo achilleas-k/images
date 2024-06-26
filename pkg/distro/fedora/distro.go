@@ -582,6 +582,26 @@ func (a *architecture) addImageTypes(platform platform.Platform, imageTypes ...i
 		}
 	}
 }
+func (a *architecture) addOtkImageTypes(platform platform.Platform, imageTypes ...otkImageType) {
+	if a.imageTypes == nil {
+		a.imageTypes = map[string]distro.ImageType{}
+	}
+	for idx := range imageTypes {
+		it := imageTypes[idx]
+		it.arch = a
+		it.platform = platform
+		a.imageTypes[it.name] = &it
+		for _, alias := range it.nameAliases {
+			if a.imageTypeAliases == nil {
+				a.imageTypeAliases = map[string]string{}
+			}
+			if existingAliasFor, exists := a.imageTypeAliases[alias]; exists {
+				panic(fmt.Sprintf("image type alias '%s' for '%s' is already defined for another image type '%s'", alias, it.name, existingAliasFor))
+			}
+			a.imageTypeAliases[alias] = it.name
+		}
+	}
+}
 
 func (a *architecture) Distro() distro.Distro {
 	return a.distro
@@ -1002,6 +1022,19 @@ func newDistro(version int) distro.Distro {
 	s390x.addImageTypes(
 		&platform.S390X{},
 		containerImgType,
+	)
+
+	qcowOtk := NewOtkImageType("./otk/fedora/qcow2.yaml")
+	x86_64.addOtkImageTypes(
+		&platform.X86{
+			BIOS:       true,
+			UEFIVendor: "fedora",
+			BasePlatform: platform.BasePlatform{
+				ImageFormat: platform.FORMAT_QCOW2,
+				QCOW2Compat: "1.1",
+			},
+		},
+		qcowOtk,
 	)
 
 	rd.addArches(x86_64, aarch64, ppc64le, s390x)
