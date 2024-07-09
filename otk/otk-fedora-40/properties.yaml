@@ -1,0 +1,5 @@
+---
+name: "fedora-40"
+os_version: "40"
+release_version: "40"
+runner: "org.osbuild.fedora40"
