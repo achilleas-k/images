@@ -7,6 +7,7 @@ import (
 	"github.com/osbuild/images/internal/common"
 	"github.com/osbuild/images/pkg/artifact"
 	"github.com/osbuild/images/pkg/container"
+	"github.com/osbuild/images/pkg/customizations/fsnode"
 	"github.com/osbuild/images/pkg/customizations/users"
 	"github.com/osbuild/images/pkg/disk"
 	"github.com/osbuild/images/pkg/osbuild"
@@ -180,6 +181,17 @@ func (p *RawBootcImage) serialize() osbuild.Pipeline {
 		groupsStage.Mounts = mounts
 		groupsStage.Devices = devices
 		pipeline.AddStage(groupsStage)
+	}
+
+	dirNode, _ := fsnode.NewDirectory("/var/stuff", nil, nil, nil, true)
+	dirs := []*fsnode.Directory{
+		dirNode,
+	}
+	dirStages := osbuild.GenDirectoryNodesStages(dirs)
+	for _, dirStage := range dirStages {
+		dirStage.Mounts = mounts
+		dirStage.Devices = devices
+		pipeline.AddStage(dirStage)
 	}
 
 	if len(p.Users) > 0 {
