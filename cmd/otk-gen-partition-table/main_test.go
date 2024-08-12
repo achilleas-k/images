@@ -418,9 +418,8 @@ func TestGenPartitionTableCustomizationExtraMp(t *testing.T) {
 										Size: 3003121664,
 										Payload: &disk.Filesystem{
 											Mountpoint: "/var/log",
-											// XXX: this is confusing
-											Type: "xfs",
-											UUID: "a178892e-e285-4ce1-9114-55780875d64e",
+											Type:       "ext4",
+											UUID:       "a178892e-e285-4ce1-9114-55780875d64e",
 											// XXX: is this needed?
 											FSTabOptions: "defaults",
 										},
@@ -489,9 +488,8 @@ func TestGenPartitionTableCustomizationExtraMpPlusModificationPartitionMode(t *t
 							Start: 1048576,
 							Size:  3001024512,
 							Payload: &disk.Filesystem{
-								Mountpoint: "/var/log",
-								// XXX: this is confusing
-								Type:         "xfs",
+								Mountpoint:   "/var/log",
+								Type:         "ext4",
 								UUID:         "fb180daf-48a7-4ee0-b10d-394651850fd4",
 								FSTabOptions: "defaults",
 							},
