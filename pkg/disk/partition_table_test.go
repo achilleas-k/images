@@ -105,3 +105,69 @@ func TestPartitionTable_GenerateUUIDs_VFAT(t *testing.T) {
 
 	assert.Equal(t, "6e4ff95f", pt.Partitions[0].Payload.(*disk.Filesystem).UUID)
 }
+
+func TestCreateMountpoint(t *testing.T) {
+	type testCase struct {
+		baseMnt       map[string]string
+		newMnt        map[string]string
+		expectedMnt   map[string]string
+		expectedError error
+	}
+
+	testCases := map[string]testCase{
+		"simple": {
+			baseMnt: map[string]string{
+				"/": "ext4",
+			},
+			newMnt: map[string]string{
+				"/data": "xfs",
+			},
+			expectedMnt: map[string]string{
+				"/":     "ext4",
+				"/data": "xfs",
+			},
+		},
+		"simple-nonsense": {
+			baseMnt: map[string]string{
+				"/": "ext4",
+			},
+			newMnt: map[string]string{
+				"/data": "ntfs",
+			},
+			expectedMnt: map[string]string{
+				"/":     "ext4",
+				"/data": "ntfs",
+			},
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			pt := &disk.PartitionTable{}
+			for mnt, fstype := range tc.baseMnt {
+				pt.Partitions = append(pt.Partitions,
+					disk.Partition{
+						Payload: &disk.Filesystem{
+							Mountpoint: mnt,
+							Type:       fstype,
+						},
+					},
+				)
+			}
+
+			for mnt, fstype := range tc.newMnt {
+				_, err := pt.CreateMountpoint(mnt, 1, fstype)
+				assert.Equal(t, err, tc.expectedError)
+			}
+
+			// collect all mountpoints
+			finalMnt := make(map[string]string)
+			pt.ForEachMountable(func(mnt disk.Mountable, _ []disk.Entity) error {
+				finalMnt[mnt.GetMountpoint()] = mnt.GetFSType()
+				return nil
+			})
+
+			assert.Equal(t, finalMnt, tc.expectedMnt)
+		})
+	}
+}
