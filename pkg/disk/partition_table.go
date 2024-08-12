@@ -326,9 +326,9 @@ func (pt *PartitionTable) EnsureDirectorySizes(dirSizeMap map[string]uint64) {
 	}
 }
 
-func (pt *PartitionTable) CreateMountpoint(mountpoint string, size uint64) (Entity, error) {
+func (pt *PartitionTable) CreateMountpoint(mountpoint string, size uint64, fstype string) (Entity, error) {
 	filesystem := Filesystem{
-		Type:         "xfs",
+		Type:         fstype,
 		Mountpoint:   mountpoint,
 		FSTabOptions: "defaults",
 		FSTabFreq:    0,
@@ -439,7 +439,7 @@ func (pt *PartitionTable) applyCustomization(mountpoints []blueprint.FilesystemC
 		} else {
 			if !create {
 				newMountpoints = append(newMountpoints, mnt)
-			} else if err := pt.createFilesystem(mnt.Mountpoint, size); err != nil {
+			} else if err := pt.createFilesystem(mnt.Mountpoint, size, mnt.Type); err != nil {
 				return nil, err
 			}
 		}
@@ -513,7 +513,7 @@ func (pt *PartitionTable) relayout(size uint64) uint64 {
 	return start
 }
 
-func (pt *PartitionTable) createFilesystem(mountpoint string, size uint64) error {
+func (pt *PartitionTable) createFilesystem(mountpoint string, size uint64, fstype string) error {
 	rootPath := entityPath(pt, "/")
 	if rootPath == nil {
 		panic("no root mountpoint for PartitionTable")
@@ -533,7 +533,12 @@ func (pt *PartitionTable) createFilesystem(mountpoint string, size uint64) error
 		panic("could not find root volume container")
 	}
 
-	newVol, err := vc.CreateMountpoint(mountpoint, 0)
+	if fstype == "" {
+		// if the fstype for a new filesystem isn't set, inherit the root type
+		fstype = pt.FindMountable("/").GetFSType()
+	}
+
+	newVol, err := vc.CreateMountpoint(mountpoint, 0, fstype)
 	if err != nil {
 		return fmt.Errorf("failed creating volume: " + err.Error())
 	}
@@ -696,7 +701,7 @@ func (pt *PartitionTable) ensureLVM() error {
 	// we need a /boot partition to boot LVM, ensure one exists
 	bootPath := entityPath(pt, "/boot")
 	if bootPath == nil {
-		_, err := pt.CreateMountpoint("/boot", 512*common.MiB)
+		_, err := pt.CreateMountpoint("/boot", 512*common.MiB, "xfs")
 
 		if err != nil {
 			return err
@@ -755,7 +760,7 @@ func (pt *PartitionTable) ensureBtrfs() error {
 	// we need a /boot partition to boot btrfs, ensure one exists
 	bootPath := entityPath(pt, "/boot")
 	if bootPath == nil {
-		_, err := pt.CreateMountpoint("/boot", 512*common.MiB)
+		_, err := pt.CreateMountpoint("/boot", 512*common.MiB, "xfs")
 		if err != nil {
 			return fmt.Errorf("failed to create /boot partition when ensuring btrfs: %w", err)
 		}

@@ -60,7 +60,10 @@ func (b *Btrfs) GetItemCount() uint {
 func (b *Btrfs) GetChild(n uint) Entity {
 	return &b.Subvolumes[n]
 }
-func (b *Btrfs) CreateMountpoint(mountpoint string, size uint64) (Entity, error) {
+func (b *Btrfs) CreateMountpoint(mountpoint string, size uint64, fstype string) (Entity, error) {
+	if fstype != "" && fstype != "btrfs" {
+		return nil, fmt.Errorf("Btrfs.CreateMountpoint(): subvolume fstype %q is invalid", fstype)
+	}
 	name := mountpoint
 	if name == "/" {
 		name = "root"
