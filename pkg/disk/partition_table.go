@@ -687,7 +687,9 @@ func (pt *PartitionTable) GenUUID(rng *rand.Rand) {
 // ensureLVM will ensure that the root partition is on an LVM volume, i.e. if
 // it currently is not, it will wrap it in one.
 // The vgname and lvname arguments set the name for the root VolumeGroup and
-// LogivalVolume that will be created.
+// LogivalVolume that will be created. If root is already on LVM, both the
+// VolumeGroup and LogicalVolume are renamed.
+// Both vgname and lvname must be valid names (see lvm(8)).
 func (pt *PartitionTable) ensureLVM(vgname, lvname string) error {
 
 	rootPath := entityPath(pt, "/")
@@ -707,12 +709,21 @@ func (pt *PartitionTable) ensureLVM(vgname, lvname string) error {
 		rootPath = entityPath(pt, "/")
 	}
 
-	parent := rootPath[1] // NB: entityPath has reversed order
+	rootParent := rootPath[1] // NB: entityPath has reversed order
 
-	if _, ok := parent.(*LVMLogicalVolume); ok {
+	switch parent := rootParent.(type) {
+	case *LVMLogicalVolume:
+		// already LVM - set names
+		parent.Name = lvname
+		lvparent := rootPath[2]
+		rootvg, ok := lvparent.(*LVMVolumeGroup)
+		if !ok {
+			return fmt.Errorf("LVMLogicalVolume %v has unsupported parent type %t", parent, lvparent)
+		}
+		rootvg.Name = vgname
 		return nil
-	} else if part, ok := parent.(*Partition); ok {
-		filesystem := part.Payload
+	case *Partition:
+		filesystem := parent.Payload
 
 		vg := &LVMVolumeGroup{
 			Name:        vgname,
@@ -721,24 +732,24 @@ func (pt *PartitionTable) ensureLVM(vgname, lvname string) error {
 
 		// create root logical volume on the new volume group with the same
 		// size and filesystem as the previous root partition
-		_, err := vg.CreateLogicalVolume(lvname, part.Size, filesystem)
+		_, err := vg.CreateLogicalVolume(lvname, parent.Size, filesystem)
 		if err != nil {
 			panic(fmt.Sprintf("Could not create LV: %v", err))
 		}
 
 		// replace the top-level partition payload with the new volume group
-		part.Payload = vg
+		parent.Payload = vg
 
 		// reset the vg partition size - it will be grown later
-		part.Size = 0
+		parent.Size = 0
 
 		if pt.Type == "gpt" {
-			part.Type = LVMPartitionGUID
+			parent.Type = LVMPartitionGUID
 		} else {
-			part.Type = "8e"
+			parent.Type = "8e"
 		}
 
-	} else {
+	default:
 		return fmt.Errorf("Unsupported parent for LVM")
 	}
 
