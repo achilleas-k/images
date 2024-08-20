@@ -1230,3 +1230,66 @@ func TestFSTabOptionsReadOnly(t *testing.T) {
 		})
 	}
 }
+
+func TestEnsureLVM(t *testing.T) {
+	type testCase struct {
+		ptName string // one of the existing testPartitionTables
+		vgName string
+		lvName string
+	}
+
+	testCases := map[string]testCase{
+		"happy-plain": {
+			ptName: "plain",
+			vgName: "test",
+			lvName: "test-lv",
+		},
+		"happy-plain-noboot": {
+			ptName: "plain-noboot",
+			vgName: "test",
+			lvName: "test-lv",
+		},
+		"happy-luks": {
+			ptName: "luks",
+			vgName: "test",
+			lvName: "test-lv",
+		},
+		"happy-luks+lvm": {
+			ptName: "luks+lvm",
+			vgName: "test",
+			lvName: "test-lv",
+		},
+		"happy-btrfs": {
+			ptName: "btrfs",
+			vgName: "test",
+			lvName: "test-lv",
+		},
+	}
+
+	for tcName := range testCases {
+		tc := testCases[tcName]
+		t.Run(tcName, func(t *testing.T) {
+			assert := assert.New(t)
+			basePt := testPartitionTables[tc.ptName]
+			testPt := (&basePt).Clone().(*PartitionTable)
+
+			testPt.ensureLVM(tc.vgName, tc.lvName)
+
+			// bootPath should be [Filesystem, Partition, PartitionTable]
+			bootPath := entityPath(testPt, "/boot")
+			assert.Len(bootPath, 3)
+			bootPathTypes := []Entity{&Filesystem{}, &Partition{}, &PartitionTable{}}
+			for idx := range bootPath {
+				assert.IsType(bootPathTypes[idx], bootPath[idx])
+			}
+
+			// rootPath should be (at least) [Filesystem, LVMLogicalVolume, LVMVolumeGroup, ..., PartitionTable]
+			rootPath := entityPath(testPt, "/")
+			assert.GreaterOrEqual(len(rootPath), 4)
+			rootPathTypes := []Entity{&Filesystem{}, &LVMLogicalVolume{}, &LVMVolumeGroup{}}
+			for idx := range rootPath[:3] {
+				assert.IsType(rootPathTypes[idx], rootPath[idx])
+			}
+		})
+	}
+}
