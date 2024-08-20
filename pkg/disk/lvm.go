@@ -85,7 +85,7 @@ func (vg *LVMVolumeGroup) CreateMountpoint(mountpoint string, size uint64) (Enti
 		FSTabPassNo:  0,
 	}
 
-	return vg.CreateLogicalVolume(mountpoint, size, &filesystem)
+	return vg.CreateLogicalVolume(lvname(mountpoint), size, &filesystem)
 }
 
 func (vg *LVMVolumeGroup) CreateLogicalVolume(lvName string, size uint64, payload Entity) (Entity, error) {
@@ -98,9 +98,8 @@ func (vg *LVMVolumeGroup) CreateLogicalVolume(lvName string, size uint64, payloa
 		names[lv.Name] = true
 	}
 
-	base := lvname(lvName)
 	var exists bool
-	name := base
+	name := lvName
 
 	// Make sure that we don't collide with an existing volume, e.g.
 	// '/home/test' and '/home_test' would collide. We try 100 times and then
@@ -112,7 +111,7 @@ func (vg *LVMVolumeGroup) CreateLogicalVolume(lvName string, size uint64, payloa
 			break
 		}
 
-		name = fmt.Sprintf("%s%02d", base, i)
+		name = fmt.Sprintf("%s%02d", lvName, i)
 	}
 
 	if exists {

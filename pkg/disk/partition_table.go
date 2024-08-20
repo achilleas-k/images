@@ -121,7 +121,7 @@ func NewPartitionTable(basePT *PartitionTable, mountpoints []blueprint.Filesyste
 		return nil, fmt.Errorf("unsupported partitioning mode %q", mode)
 	}
 	if ensureLVM {
-		err := newPT.ensureLVM("rootvg", "root")
+		err := newPT.ensureLVM("rootvg", "rootlv")
 		if err != nil {
 			return nil, err
 		}
