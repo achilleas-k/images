@@ -102,9 +102,10 @@ func (vg *LVMVolumeGroup) CreateLogicalVolume(lvName string, size uint64, payloa
 	var exists bool
 	name := base
 
-	// Make sure that we don't collide with an existing volume, e.g. 'home/test'
-	// and /home/test_test would collide. We try 100 times and then give up. This
-	// is mimicking what blivet does. See blivet/blivet.py#L1060 commit 2eb4bd4
+	// Make sure that we don't collide with an existing volume, e.g.
+	// '/home/test' and '/home_test' would collide. We try 100 times and then
+	// give up. This is mimicking what blivet does. See blivet/blivet.py#L1060
+	// commit 2eb4bd4
 	for i := 0; i < 100; i++ {
 		exists = names[name]
 		if !exists {
