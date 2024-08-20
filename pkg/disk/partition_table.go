@@ -121,7 +121,7 @@ func NewPartitionTable(basePT *PartitionTable, mountpoints []blueprint.Filesyste
 		return nil, fmt.Errorf("unsupported partitioning mode %q", mode)
 	}
 	if ensureLVM {
-		err := newPT.ensureLVM()
+		err := newPT.ensureLVM("rootvg", "root")
 		if err != nil {
 			return nil, err
 		}
@@ -685,8 +685,10 @@ func (pt *PartitionTable) GenUUID(rng *rand.Rand) {
 }
 
 // ensureLVM will ensure that the root partition is on an LVM volume, i.e. if
-// it currently is not, it will wrap it in one
-func (pt *PartitionTable) ensureLVM() error {
+// it currently is not, it will wrap it in one.
+// The vgname and lvname arguments set the name for the root VolumeGroup and
+// LogivalVolume that will be created.
+func (pt *PartitionTable) ensureLVM(vgname, lvname string) error {
 
 	rootPath := entityPath(pt, "/")
 	if rootPath == nil {
@@ -713,13 +715,13 @@ func (pt *PartitionTable) ensureLVM() error {
 		filesystem := part.Payload
 
 		vg := &LVMVolumeGroup{
-			Name:        "rootvg",
+			Name:        vgname,
 			Description: "created via lvm2 and osbuild",
 		}
 
 		// create root logical volume on the new volume group with the same
 		// size and filesystem as the previous root partition
-		_, err := vg.CreateLogicalVolume("root", part.Size, filesystem)
+		_, err := vg.CreateLogicalVolume(lvname, part.Size, filesystem)
 		if err != nil {
 			panic(fmt.Sprintf("Could not create LV: %v", err))
 		}
