@@ -9,9 +9,59 @@ import (
 	"github.com/osbuild/images/pkg/pathpolicy"
 )
 
+// TODO: validate input:
+// - Duplicate mountpoints
+// - No mixing of btrfs and LVM
+// - Only one swap partition or file
+
+type PartitioningCustomization struct {
+	Plain *PlainFilesystemCustomization `json:"plain,omitempty" toml:"plain,omitempty"`
+	LVM   *LVMCustomization             `json:"lvm,omitempty" toml:"lvm,omitempty"`
+	Btrfs *BtrfsCustomization           `json:"btrfs,omitempty" toml:"btrfs,omitempty"`
+}
+
+type PlainFilesystemCustomization struct {
+	Filesystems []FilesystemCustomization `json:"filesystems,omitempty" toml:"filesystems,omitempty"`
+}
+
 type FilesystemCustomization struct {
-	Mountpoint string `json:"mountpoint,omitempty" toml:"mountpoint,omitempty"`
+	Mountpoint string `json:"mountpoint" toml:"mountpoint"`
 	MinSize    uint64 `json:"minsize,omitempty" toml:"minsize,omitempty"`
+	Label      string `json:"label,omitempty" toml:"label,omitempty"`
+	Type       string `json:"type,omitempty" toml:"type,omitempty"`
+}
+
+type LVMCustomization struct {
+	VolumeGroups []VGCustomization `json:"volume_groups,omitempty" toml:"volume_groups,omitempty"`
+}
+
+type VGCustomization struct {
+	// Volume group name
+	Name string `json:"name" toml:"name"`
+	// Size of the partition that contains the volume group
+	MinSize        uint64            `json:"minsize" toml:"minsize"`
+	LogicalVolumes []LVCustomization `json:"logical_volumes,omitempty" toml:"logical_volumes,omitempty"`
+}
+
+type LVCustomization struct {
+	// Logical volume name
+	Name string `json:"name,omitempty" toml:"name,omitempty"`
+	FilesystemCustomization
+}
+
+type BtrfsCustomization struct {
+	Volumes []BtrfsVolumeCustomization
+}
+
+type BtrfsVolumeCustomization struct {
+	// Size of the btrfs partition/volume.
+	MinSize    uint64 `json:"minsize" toml:"minsize"`
+	Subvolumes []BtrfsSubvolumeCustomization
+}
+
+type BtrfsSubvolumeCustomization struct {
+	Name       string `json:"name" toml:"name"`
+	Mountpoint string `json:"mountpoint" toml:"mountpoint"`
 }
 
 func (fsc *FilesystemCustomization) UnmarshalTOML(data interface{}) error {
@@ -22,6 +72,24 @@ func (fsc *FilesystemCustomization) UnmarshalTOML(data interface{}) error {
 		fsc.Mountpoint = d["mountpoint"].(string)
 	default:
 		return fmt.Errorf("TOML unmarshal: mountpoint must be string, got %v of type %T", d["mountpoint"], d["mountpoint"])
+	}
+
+	switch d["type"].(type) {
+	case nil:
+		// empty allowed
+	case string:
+		fsc.Type = d["type"].(string)
+	default:
+		return fmt.Errorf("TOML unmarshal: type must be string, got %v of type %T", d["type"], d["type"])
+	}
+
+	switch d["label"].(type) {
+	case nil:
+		// empty allowed
+	case string:
+		fsc.Label = d["label"].(string)
+	default:
+		return fmt.Errorf("TOML unmarshal: label must be string, got %v of type %T", d["label"], d["label"])
 	}
 
 	switch d["minsize"].(type) {
@@ -52,6 +120,24 @@ func (fsc *FilesystemCustomization) UnmarshalJSON(data []byte) error {
 		fsc.Mountpoint = d["mountpoint"].(string)
 	default:
 		return fmt.Errorf("JSON unmarshal: mountpoint must be string, got %v of type %T", d["mountpoint"], d["mountpoint"])
+	}
+
+	switch d["type"].(type) {
+	case nil:
+		// empty allowed
+	case string:
+		fsc.Type = d["type"].(string)
+	default:
+		return fmt.Errorf("JSON unmarshal: type must be string, got %v of type %T", d["type"], d["type"])
+	}
+
+	switch d["label"].(type) {
+	case nil:
+		// empty allowed
+	case string:
+		fsc.Label = d["label"].(string)
+	default:
+		return fmt.Errorf("JSON unmarshal: label must be string, got %v of type %T", d["label"], d["label"])
 	}
 
 	// The JSON specification only mentions float64 and Go defaults to it: https://go.dev/blog/json
