@@ -9,9 +9,37 @@ import (
 	"github.com/osbuild/images/pkg/pathpolicy"
 )
 
-type FilesystemCustomization struct {
-	Mountpoint string `json:"mountpoint,omitempty" toml:"mountpoint,omitempty"`
+type FilesystemCustomization MountpointCustomization
+
+type MountpointCustomization struct {
+	Mountpoint string `json:"mountpoint" toml:"mountpoint"`
 	MinSize    uint64 `json:"minsize,omitempty" toml:"minsize,omitempty"`
+	Label      string `json:"label,omitempty" toml:"label,omitempty"`
+}
+
+type LVCustomization struct {
+	// Logical volume name
+	Name string
+	MountpointCustomization
+}
+
+type VGCustomization struct {
+	// Volume group name
+	Name string `json:"name" toml:"name"`
+	// Size of the partition that contains the volume group
+	Size           string            `json:"size" toml:"size"`
+	LogicalVolumes []LVCustomization `json:"mountpoints,omitempty" toml:"mountpoints,omitempty"`
+}
+
+type LVMCustomization struct {
+	VolumeGroups []VGCustomization `json:"volume-groups,omitempty" toml:"volume-groups,omitempty"`
+}
+
+type PartitioningCustomization struct {
+	PartitioningMode string                    `json:"partitioning-mode,omitempty" toml:"partitioning-mode,omitempty"`
+	Mountpoints      []MountpointCustomization `json:"mountpoints,omitempty" toml:"mountpoints,omitempty"`
+	LVM              *LVMCustomization         `json:"lvm,omitempty" toml:"lvm,omitempty"`
+	LUKS             bool                      `json:"luks" toml:"luks"`
 }
 
 func (fsc *FilesystemCustomization) UnmarshalTOML(data interface{}) error {
