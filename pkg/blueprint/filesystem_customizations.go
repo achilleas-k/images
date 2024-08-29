@@ -15,6 +15,7 @@ type MountpointCustomization struct {
 	Mountpoint string `json:"mountpoint" toml:"mountpoint"`
 	MinSize    uint64 `json:"minsize,omitempty" toml:"minsize,omitempty"`
 	Label      string `json:"label,omitempty" toml:"label,omitempty"`
+	Type       string `json:"type,omitempty" toml:"type,omitempty"`
 }
 
 type PlainFilesystemCustomization struct {
