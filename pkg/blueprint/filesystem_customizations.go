@@ -17,6 +17,10 @@ type MountpointCustomization struct {
 	Label      string `json:"label,omitempty" toml:"label,omitempty"`
 }
 
+type PlainFilesystemCustomization struct {
+	Mountpoints []MountpointCustomization `json:"mountpoints,omitempty" toml:"mountpoints,omitempty"`
+}
+
 type LVCustomization struct {
 	// Logical volume name
 	Name string
@@ -55,18 +59,18 @@ type LuksParameterCustomization struct {
 }
 
 type LUKSCustomization struct {
-	Params      LuksParameterCustomization `json:"params" toml:"params"`
-	Mountpoints []MountpointCustomization  `json:"mountpoints,omitempty" toml:"mountpoints,omitempty"`
-	LVM         *LVMCustomization          `json:"lvm,omitempty" toml:"lvm,omitempty"`
+	Params LuksParameterCustomization    `json:"params" toml:"params"`
+	Plain  *PlainFilesystemCustomization `json:"plain,omitempty" toml:"plain,omitempty"`
+	LVM    *LVMCustomization             `json:"lvm,omitempty" toml:"lvm,omitempty"`
+	Btrfs  *BtrfsCustomization           `json:"btrfs,omitempty" toml:"btrfs,omitempty"`
 }
 
 type PartitioningCustomization struct {
-	PartitioningMode string                    `json:"partitioning-mode,omitempty" toml:"partitioning-mode,omitempty"`
-	Mountpoints      []MountpointCustomization `json:"mountpoints,omitempty" toml:"mountpoints,omitempty"`
-	LVM              *LVMCustomization         `json:"lvm,omitempty" toml:"lvm,omitempty"`
-	Btrfs            *BtrfsCustomization       `json:"btrfs,omitempty" toml:"btrfs,omitempty"`
-	LUKS             bool                      `json:"luks" toml:"luks"`
-	LUKSAlt          *LUKSCustomization        `json:"luksalt" toml:"luksalt"` // alternative to the boolean above
+	Plain   *PlainFilesystemCustomization `json:"plain,omitempty" toml:"plain,omitempty"`
+	LVM     *LVMCustomization             `json:"lvm,omitempty" toml:"lvm,omitempty"`
+	Btrfs   *BtrfsCustomization           `json:"btrfs,omitempty" toml:"btrfs,omitempty"`
+	LUKS    bool                          `json:"luks" toml:"luks"`
+	LUKSAlt *LUKSCustomization            `json:"luksalt" toml:"luksalt"` // alternative to the boolean above
 }
 
 func (fsc *FilesystemCustomization) UnmarshalTOML(data interface{}) error {
