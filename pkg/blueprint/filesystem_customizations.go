@@ -35,11 +35,22 @@ type LVMCustomization struct {
 	VolumeGroups []VGCustomization `json:"volume-groups,omitempty" toml:"volume-groups,omitempty"`
 }
 
+type LuksParameterCustomization struct {
+	// Iterations and stuff?
+}
+
+type LUKSCustomization struct {
+	Params      LuksParameterCustomization `json:"params" toml:"params"`
+	Mountpoints []MountpointCustomization  `json:"mountpoints,omitempty" toml:"mountpoints,omitempty"`
+	LVM         *LVMCustomization          `json:"lvm,omitempty" toml:"lvm,omitempty"`
+}
+
 type PartitioningCustomization struct {
 	PartitioningMode string                    `json:"partitioning-mode,omitempty" toml:"partitioning-mode,omitempty"`
 	Mountpoints      []MountpointCustomization `json:"mountpoints,omitempty" toml:"mountpoints,omitempty"`
 	LVM              *LVMCustomization         `json:"lvm,omitempty" toml:"lvm,omitempty"`
 	LUKS             bool                      `json:"luks" toml:"luks"`
+	LUKSAlt          *LUKSCustomization        `json:"luksalt" toml:"luksalt"` // alternative to the boolean above
 }
 
 func (fsc *FilesystemCustomization) UnmarshalTOML(data interface{}) error {
