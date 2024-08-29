@@ -35,6 +35,21 @@ type LVMCustomization struct {
 	VolumeGroups []VGCustomization `json:"volume-groups,omitempty" toml:"volume-groups,omitempty"`
 }
 
+type BtrfsSubvolumeCustomization struct {
+	Mountpoint string `json:"mountpoint" toml:"mountpoint"`
+	// Qgroup in the future??
+}
+
+type BtrfsVolumeCustomization struct {
+	// Size of the btrfs partition/volume.
+	Size       uint64 `json:"size" toml:"size"`
+	Subvolumes []BtrfsSubvolumeCustomization
+}
+
+type BtrfsCustomization struct {
+	Volumes []BtrfsVolumeCustomization
+}
+
 type LuksParameterCustomization struct {
 	// Iterations and stuff?
 }
@@ -49,6 +64,7 @@ type PartitioningCustomization struct {
 	PartitioningMode string                    `json:"partitioning-mode,omitempty" toml:"partitioning-mode,omitempty"`
 	Mountpoints      []MountpointCustomization `json:"mountpoints,omitempty" toml:"mountpoints,omitempty"`
 	LVM              *LVMCustomization         `json:"lvm,omitempty" toml:"lvm,omitempty"`
+	Btrfs            *BtrfsCustomization       `json:"btrfs,omitempty" toml:"btrfs,omitempty"`
 	LUKS             bool                      `json:"luks" toml:"luks"`
 	LUKSAlt          *LUKSCustomization        `json:"luksalt" toml:"luksalt"` // alternative to the boolean above
 }
