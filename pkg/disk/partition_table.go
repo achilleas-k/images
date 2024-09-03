@@ -168,6 +168,10 @@ func NewCustomPartitionTable(customizations *blueprint.PartitioningCustomization
 		return pt, nil
 	}
 
+	// TODO: add bios boot part (1 MiB empty)
+
+	// TODO: add efi partition
+
 	// TODO: handle dos pt type
 
 	if customizations.Plain != nil {
@@ -255,12 +259,12 @@ func NewCustomPartitionTable(customizations *blueprint.PartitioningCustomization
 				Subvolumes: subvols,
 			}
 
-			// create partition for volume group
+			// create partition for btrfs volume
 			newpart := Partition{
 				Type:     FilesystemDataGUID,
 				Bootable: false,
 				Payload:  newvol,
-				Size:     btrfsvol.Size,
+				Size:     btrfsvol.MinSize,
 			}
 
 			pt.Partitions = append(pt.Partitions, newpart)

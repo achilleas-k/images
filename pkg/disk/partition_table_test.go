@@ -156,6 +156,139 @@ func TestNewCustomPartitionTable(t *testing.T) {
 				},
 			},
 		},
+		"plain+": {
+			customizations: &blueprint.PartitioningCustomization{
+				Plain: &blueprint.PlainFilesystemCustomization{
+					Mountpoints: []blueprint.MountpointCustomization{
+						{
+							Mountpoint: "/",
+							MinSize:    50,
+							Label:      "root",
+							Type:       "xfs",
+						},
+						{
+							Mountpoint: "/home",
+							MinSize:    20,
+							Label:      "home",
+							Type:       "ext4",
+						},
+					},
+				},
+			},
+			expected: &disk.PartitionTable{
+				Partitions: []disk.Partition{
+					{
+						Start:    0,
+						Size:     50,
+						Type:     disk.FilesystemDataGUID,
+						Bootable: false,
+						Payload: &disk.Filesystem{
+							Type:         "xfs",
+							Label:        "root",
+							Mountpoint:   "/",
+							FSTabOptions: "defaults",
+							FSTabFreq:    0,
+							FSTabPassNo:  0,
+						},
+					},
+					{
+						Start:    0,
+						Size:     20,
+						Type:     disk.FilesystemDataGUID,
+						Bootable: false,
+						Payload: &disk.Filesystem{
+							Type:         "ext4",
+							Label:        "home",
+							Mountpoint:   "/home",
+							FSTabOptions: "defaults",
+							FSTabFreq:    0,
+							FSTabPassNo:  0,
+						},
+					},
+				},
+			},
+		},
+		"lvm": {
+			customizations: &blueprint.PartitioningCustomization{
+				LVM: &blueprint.LVMCustomization{
+					VolumeGroups: []blueprint.VGCustomization{
+						{
+							Name:    "testvg",
+							MinSize: 100,
+							LogicalVolumes: []blueprint.LVCustomization{
+								{
+									Name: "varloglv",
+									MountpointCustomization: blueprint.MountpointCustomization{
+										Mountpoint: "/var/log",
+										MinSize:    10,
+										Label:      "var-log",
+										Type:       "xfs",
+									},
+								},
+								{
+									Name: "rootlv",
+									MountpointCustomization: blueprint.MountpointCustomization{
+										Mountpoint: "/",
+										MinSize:    50,
+										Label:      "root",
+										Type:       "xfs",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: &disk.PartitionTable{
+				Partitions: []disk.Partition{
+					{
+						Start:    0,
+						Size:     512 * common.MiB,
+						Type:     disk.XBootLDRPartitionGUID,
+						Bootable: false,
+						Payload: &disk.Filesystem{
+							Type:         "xfs",
+							Mountpoint:   "/boot",
+							FSTabOptions: "defaults",
+							FSTabFreq:    0,
+							FSTabPassNo:  0,
+						},
+					},
+					{
+						Start:    0,
+						Size:     100,
+						Type:     disk.LVMPartitionGUID,
+						Bootable: false,
+						Payload: &disk.LVMVolumeGroup{
+							Name:        "testvg",
+							Description: "created via lvm2 and osbuild",
+							LogicalVolumes: []disk.LVMLogicalVolume{
+								{
+									Name: "varloglv",
+									Size: 10,
+									Payload: &disk.Filesystem{
+										Label:        "var-log",
+										Type:         "xfs",
+										Mountpoint:   "/var/log",
+										FSTabOptions: "defaults",
+									},
+								},
+								{
+									Name: "rootlv",
+									Size: 50,
+									Payload: &disk.Filesystem{
+										Label:        "root",
+										Type:         "xfs",
+										Mountpoint:   "/",
+										FSTabOptions: "defaults",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for name := range testCases {

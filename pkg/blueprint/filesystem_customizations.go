@@ -32,7 +32,7 @@ type VGCustomization struct {
 	// Volume group name
 	Name string `json:"name" toml:"name"`
 	// Size of the partition that contains the volume group
-	Size           string            `json:"size" toml:"size"`
+	MinSize        uint64            `json:"minsize" toml:"minsize"`
 	LogicalVolumes []LVCustomization `json:"mountpoints,omitempty" toml:"mountpoints,omitempty"`
 }
 
@@ -47,7 +47,7 @@ type BtrfsSubvolumeCustomization struct {
 
 type BtrfsVolumeCustomization struct {
 	// Size of the btrfs partition/volume.
-	Size       uint64 `json:"size" toml:"size"`
+	MinSize    uint64 `json:"minsize" toml:"minsize"`
 	Subvolumes []BtrfsSubvolumeCustomization
 }
 
