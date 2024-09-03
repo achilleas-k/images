@@ -196,10 +196,19 @@ func NewCustomPartitionTable(customizations *blueprint.PartitioningCustomization
 		// does not already exist
 		bootPath := entityPath(pt, "/boot")
 		if bootPath == nil {
-			_, err := pt.CreateMountpoint("/boot", 512*common.MiB)
-			if err != nil {
-				return nil, err
+			// TODO: make "prependBootPartition" function
+			bootPart := Partition{
+				Type:     XBootLDRPartitionGUID,
+				Bootable: false,
+				Size:     512 * common.MiB,
+				Payload: &Filesystem{
+					Type:         "xfs",
+					Label:        "boot",
+					Mountpoint:   "/boot",
+					FSTabOptions: "defaults",
+				},
 			}
+			pt.Partitions = append([]Partition{bootPart}, pt.Partitions...)
 		}
 
 		for _, vg := range customizations.LVM.VolumeGroups {
