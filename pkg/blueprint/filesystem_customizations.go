@@ -41,6 +41,7 @@ type LVMCustomization struct {
 }
 
 type BtrfsSubvolumeCustomization struct {
+	Name       string `json:"name" toml:"name"`
 	Mountpoint string `json:"mountpoint" toml:"mountpoint"`
 	// Qgroup in the future??
 }
