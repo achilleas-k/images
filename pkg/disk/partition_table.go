@@ -163,6 +163,10 @@ func NewPartitionTable(basePT *PartitionTable, mountpoints []blueprint.Filesyste
 // NewCustomPartitionTable creates a partition table based almost entirely on the partitioning customizations from a blueprint.
 func NewCustomPartitionTable(customizations *blueprint.PartitioningCustomization, minSize uint64, requiredSizes map[string]uint64, rng *rand.Rand) (*PartitionTable, error) {
 	pt := &PartitionTable{}
+	if customizations == nil {
+		// TODO: return required partitions
+		return pt, nil
+	}
 
 	// TODO: handle dos pt type
 
@@ -171,6 +175,7 @@ func NewCustomPartitionTable(customizations *blueprint.PartitioningCustomization
 			newpart := Partition{
 				Type:     FilesystemDataGUID, // all user-defined partitions are data partitions
 				Bootable: false,
+				Size:     partition.MinSize,
 				Payload: &Filesystem{
 					Type:         partition.Type,
 					Label:        partition.Label,
@@ -246,13 +251,16 @@ func NewCustomPartitionTable(customizations *blueprint.PartitioningCustomization
 				subvols[idx] = newsubvol
 			}
 
-			newvol := &Btrfs{}
+			newvol := &Btrfs{
+				Subvolumes: subvols,
+			}
 
 			// create partition for volume group
 			newpart := Partition{
 				Type:     FilesystemDataGUID,
 				Bootable: false,
 				Payload:  newvol,
+				Size:     btrfsvol.Size,
 			}
 
 			pt.Partitions = append(pt.Partitions, newpart)

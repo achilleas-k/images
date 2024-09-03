@@ -6,9 +6,11 @@ import (
 
 	"github.com/osbuild/images/internal/common"
 	"github.com/osbuild/images/internal/testdisk"
+	"github.com/osbuild/images/pkg/blueprint"
 	"github.com/osbuild/images/pkg/disk"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPartitionTable_GetMountpointSize(t *testing.T) {
@@ -104,4 +106,66 @@ func TestPartitionTable_GenerateUUIDs_VFAT(t *testing.T) {
 	pt.GenerateUUIDs(rnd)
 
 	assert.Equal(t, "6e4ff95f", pt.Partitions[0].Payload.(*disk.Filesystem).UUID)
+}
+
+func TestNewCustomPartitionTable(t *testing.T) {
+	// Static seed for testing
+	/* #nosec G404 */
+	rnd := rand.New(rand.NewSource(0))
+	require := require.New(t)
+
+	type testCase struct {
+		customizations *blueprint.PartitioningCustomization
+		expected       *disk.PartitionTable
+	}
+
+	testCases := map[string]testCase{
+		"null": {
+			customizations: nil,
+			expected:       &disk.PartitionTable{},
+		},
+		"plain": {
+			customizations: &blueprint.PartitioningCustomization{
+				Plain: &blueprint.PlainFilesystemCustomization{
+					Mountpoints: []blueprint.MountpointCustomization{
+						{
+							Mountpoint: "/data",
+							MinSize:    20,
+							Label:      "data",
+							Type:       "ext4",
+						},
+					},
+				},
+			},
+			expected: &disk.PartitionTable{
+				Partitions: []disk.Partition{
+					{
+						Start:    0,
+						Size:     20,
+						Type:     disk.FilesystemDataGUID,
+						Bootable: false,
+						Payload: &disk.Filesystem{
+							Type:         "ext4",
+							Label:        "data",
+							Mountpoint:   "/data",
+							FSTabOptions: "defaults",
+							FSTabFreq:    0,
+							FSTabPassNo:  0,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for name := range testCases {
+		tc := testCases[name]
+		t.Run(name, func(t *testing.T) {
+			pt, err := disk.NewCustomPartitionTable(tc.customizations, 0, nil, rnd)
+			require.NoError(err)
+
+			require.Equal(tc.expected, pt)
+		})
+	}
+
 }
