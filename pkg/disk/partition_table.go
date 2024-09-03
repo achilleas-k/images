@@ -236,6 +236,7 @@ func NewCustomPartitionTable(customizations *blueprint.PartitioningCustomization
 			// create partition for volume group
 			newpart := Partition{
 				Type:     LVMPartitionGUID,
+				Size:     vg.MinSize,
 				Bootable: false,
 				Payload:  newvg,
 			}

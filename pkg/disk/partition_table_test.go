@@ -248,6 +248,7 @@ func TestNewCustomPartitionTable(t *testing.T) {
 						Bootable: false,
 						Payload: &disk.Filesystem{
 							Type:         "xfs",
+							Label:        "boot",
 							Mountpoint:   "/boot",
 							FSTabOptions: "defaults",
 							FSTabFreq:    0,
