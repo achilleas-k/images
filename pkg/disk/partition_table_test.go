@@ -355,6 +355,163 @@ func TestNewCustomPartitionTable(t *testing.T) {
 				},
 			},
 		},
+		"the-works": { // this is silly
+			customizations: &blueprint.PartitioningCustomization{
+				Plain: &blueprint.PlainFilesystemCustomization{
+					Mountpoints: []blueprint.MountpointCustomization{
+						{
+							Mountpoint: "/data",
+							MinSize:    1000,
+							Label:      "data",
+							Type:       "ext4",
+						},
+						{
+							Mountpoint: "/otherstuff",
+							MinSize:    2000,
+							Label:      "other-stuff",
+							Type:       "ext4",
+						},
+					},
+				},
+				LVM: &blueprint.LVMCustomization{
+					VolumeGroups: []blueprint.VGCustomization{
+						{
+							Name:    "testvg",
+							MinSize: 199,
+							LogicalVolumes: []blueprint.LVCustomization{
+								{
+									Name: "varloglv",
+									MountpointCustomization: blueprint.MountpointCustomization{
+										Mountpoint: "/var/log",
+										MinSize:    50,
+										Label:      "var-log",
+										Type:       "xfs",
+									},
+								},
+								{
+									Name: "rootlv",
+									MountpointCustomization: blueprint.MountpointCustomization{
+										Mountpoint: "/",
+										MinSize:    100,
+										Label:      "root",
+										Type:       "xfs",
+									},
+								},
+							},
+						},
+					},
+				},
+				Btrfs: &blueprint.BtrfsCustomization{
+					Volumes: []blueprint.BtrfsVolumeCustomization{
+						{
+							MinSize: 9999,
+							Subvolumes: []blueprint.BtrfsSubvolumeCustomization{
+								{
+									Name:       "subvol/scratch",
+									Mountpoint: "/scratch",
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: &disk.PartitionTable{
+				Partitions: []disk.Partition{
+					{
+						Start:    0,
+						Size:     512 * common.MiB,
+						Type:     disk.XBootLDRPartitionGUID,
+						Bootable: false,
+						Payload: &disk.Filesystem{
+							Type:         "xfs",
+							Label:        "boot",
+							Mountpoint:   "/boot",
+							FSTabOptions: "defaults",
+							FSTabFreq:    0,
+							FSTabPassNo:  0,
+						},
+					},
+					{
+						Start:    0,
+						Size:     1000,
+						Type:     disk.FilesystemDataGUID,
+						Bootable: false,
+						Payload: &disk.Filesystem{
+							Mountpoint:   "/data",
+							Label:        "data",
+							Type:         "ext4",
+							FSTabOptions: "defaults",
+							FSTabFreq:    0,
+							FSTabPassNo:  0,
+						},
+					},
+					{
+						Start:    0,
+						Size:     2000,
+						Type:     disk.FilesystemDataGUID,
+						Bootable: false,
+						Payload: &disk.Filesystem{
+							Mountpoint:   "/otherstuff",
+							Label:        "other-stuff",
+							Type:         "ext4",
+							FSTabOptions: "defaults",
+							FSTabFreq:    0,
+							FSTabPassNo:  0,
+						},
+					},
+					{
+						Start:    0,
+						Size:     199,
+						Type:     disk.LVMPartitionGUID,
+						Bootable: false,
+						Payload: &disk.LVMVolumeGroup{
+							Name:        "testvg",
+							Description: "created via lvm2 and osbuild",
+							LogicalVolumes: []disk.LVMLogicalVolume{
+								{
+									Name: "varloglv",
+									Size: 50,
+									Payload: &disk.Filesystem{
+										Label:        "var-log",
+										Mountpoint:   "/var/log",
+										Type:         "xfs",
+										FSTabOptions: "defaults",
+										FSTabFreq:    0,
+										FSTabPassNo:  0,
+									},
+								},
+								{
+									Name: "rootlv",
+									Size: 100,
+									Payload: &disk.Filesystem{
+										Label:        "root",
+										Mountpoint:   "/",
+										Type:         "xfs",
+										FSTabOptions: "defaults",
+										FSTabFreq:    0,
+										FSTabPassNo:  0,
+									},
+								},
+							},
+						},
+					},
+					{
+						Start:    0,
+						Size:     9999,
+						Type:     disk.FilesystemDataGUID,
+						Bootable: false,
+						Payload: &disk.Btrfs{
+							Subvolumes: []disk.BtrfsSubvolume{
+								{
+									Name:       "subvol/scratch",
+									Mountpoint: "/scratch",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for name := range testCases {
