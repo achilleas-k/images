@@ -290,6 +290,71 @@ func TestNewCustomPartitionTable(t *testing.T) {
 				},
 			},
 		},
+		"btrfs": {
+			customizations: &blueprint.PartitioningCustomization{
+				Btrfs: &blueprint.BtrfsCustomization{
+					Volumes: []blueprint.BtrfsVolumeCustomization{
+						{
+							MinSize: 230,
+							Subvolumes: []blueprint.BtrfsSubvolumeCustomization{
+								{
+									Name:       "subvol/root",
+									Mountpoint: "/",
+								},
+								{
+									Name:       "subvol/home",
+									Mountpoint: "/home",
+								},
+								{
+									Name:       "subvol/varlog",
+									Mountpoint: "/var/log",
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: &disk.PartitionTable{
+				Partitions: []disk.Partition{
+					{
+						Start:    0,
+						Size:     512 * common.MiB,
+						Type:     disk.XBootLDRPartitionGUID,
+						Bootable: false,
+						Payload: &disk.Filesystem{
+							Type:         "xfs",
+							Label:        "boot",
+							Mountpoint:   "/boot",
+							FSTabOptions: "defaults",
+							FSTabFreq:    0,
+							FSTabPassNo:  0,
+						},
+					},
+					{
+						Start:    0,
+						Size:     230,
+						Type:     disk.FilesystemDataGUID,
+						Bootable: false,
+						Payload: &disk.Btrfs{
+							Subvolumes: []disk.BtrfsSubvolume{
+								{
+									Name:       "subvol/root",
+									Mountpoint: "/",
+								},
+								{
+									Name:       "subvol/home",
+									Mountpoint: "/home",
+								},
+								{
+									Name:       "subvol/varlog",
+									Mountpoint: "/var/log",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for name := range testCases {
