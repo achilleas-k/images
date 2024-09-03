@@ -174,6 +174,16 @@ func NewCustomPartitionTable(customizations *blueprint.PartitioningCustomization
 
 	// TODO: handle dos pt type
 
+	// TODO: ensure root partition exists
+
+	// TODO: only add /boot if / is on lvm or btrfs
+
+	// TODO: return error if mountpoints are duplicated
+
+	// TODO: align and fill in UUIDs
+
+	// TODO: LUKS
+
 	if customizations.Plain != nil {
 		for _, partition := range customizations.Plain.Mountpoints {
 			newpart := Partition{
