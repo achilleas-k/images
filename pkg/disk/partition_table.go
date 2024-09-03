@@ -246,21 +246,31 @@ func NewCustomPartitionTable(customizations *blueprint.PartitioningCustomization
 	}
 
 	if customizations.Btrfs != nil {
-		// we need a /boot partition to boot btrfs, create boot partition if it
+		// we need a /boot partition to boot LVM, create boot partition if it
 		// does not already exist
 		bootPath := entityPath(pt, "/boot")
 		if bootPath == nil {
-			_, err := pt.CreateMountpoint("/boot", 512*common.MiB)
-			if err != nil {
-				return nil, err
+			// TODO: make "prependBootPartition" function
+			bootPart := Partition{
+				Type:     XBootLDRPartitionGUID,
+				Bootable: false,
+				Size:     512 * common.MiB,
+				Payload: &Filesystem{
+					Type:         "xfs",
+					Label:        "boot",
+					Mountpoint:   "/boot",
+					FSTabOptions: "defaults",
+				},
 			}
+			pt.Partitions = append([]Partition{bootPart}, pt.Partitions...)
 		}
 
 		for _, btrfsvol := range customizations.Btrfs.Volumes {
 			subvols := make([]BtrfsSubvolume, len(btrfsvol.Subvolumes))
 			for idx, subvol := range btrfsvol.Subvolumes {
 				newsubvol := BtrfsSubvolume{
-					Name: subvol.Mountpoint,
+					Name:       subvol.Name,
+					Mountpoint: subvol.Mountpoint,
 				}
 				subvols[idx] = newsubvol
 			}
