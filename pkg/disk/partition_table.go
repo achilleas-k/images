@@ -184,6 +184,8 @@ func NewCustomPartitionTable(customizations *blueprint.PartitioningCustomization
 
 	// TODO: LUKS
 
+	// TODO: handle required sizes or remove completely
+
 	if customizations.Plain != nil {
 		for _, partition := range customizations.Plain.Mountpoints {
 			newpart := Partition{
