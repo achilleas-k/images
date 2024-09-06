@@ -9,6 +9,7 @@ import (
 
 	"github.com/osbuild/images/internal/common"
 	"github.com/osbuild/images/pkg/blueprint"
+	"github.com/osbuild/images/pkg/platform"
 )
 
 type PartitionTable struct {
@@ -160,17 +161,35 @@ func NewPartitionTable(basePT *PartitionTable, mountpoints []blueprint.Filesyste
 	return newPT, nil
 }
 
+func mkBIOSBoot() Partition {
+	return Partition{
+		Size:     1 * common.MebiByte,
+		Bootable: true,
+		Type:     BIOSBootPartitionGUID,
+		UUID:     BIOSBootPartitionUUID,
+	}
+}
+
+func mkESP(size uint64) Partition {
+	return Partition{
+		Size: size,
+		Type: EFISystemPartitionGUID,
+		UUID: EFISystemPartitionUUID,
+		Payload: &Filesystem{
+			Type:         "vfat",
+			UUID:         EFIFilesystemUUID,
+			Mountpoint:   "/boot/efi",
+			Label:        "EFI-SYSTEM",
+			FSTabOptions: "defaults,uid=0,gid=0,umask=077,shortname=winnt",
+			FSTabFreq:    0,
+			FSTabPassNo:  2,
+		},
+	}
+}
+
 // NewCustomPartitionTable creates a partition table based almost entirely on the partitioning customizations from a blueprint.
 func NewCustomPartitionTable(customizations *blueprint.PartitioningCustomization, minSize uint64, requiredSizes map[string]uint64, rng *rand.Rand) (*PartitionTable, error) {
 	pt := &PartitionTable{}
-	if customizations == nil {
-		// TODO: return required partitions
-		return pt, nil
-	}
-
-	// TODO: add bios boot part (1 MiB empty)
-
-	// TODO: add efi partition
 
 	// TODO: handle dos pt type
 
@@ -185,6 +204,49 @@ func NewCustomPartitionTable(customizations *blueprint.PartitioningCustomization
 	// TODO: LUKS
 
 	// TODO: handle required sizes or remove completely
+
+	// TODO: bootmode function argument
+	bootmode := platform.BOOT_HYBRID
+	switch bootmode {
+	case platform.BOOT_LEGACY:
+		// add BIOS boot partition
+		pt.Partitions = append(pt.Partitions, mkBIOSBoot())
+	case platform.BOOT_UEFI:
+		// add ESP
+		pt.Partitions = append(pt.Partitions, mkESP(200*common.MebiByte))
+	case platform.BOOT_HYBRID:
+		// add both
+		pt.Partitions = append(pt.Partitions, mkBIOSBoot())
+		pt.Partitions = append(pt.Partitions, mkESP(200*common.MebiByte))
+	case platform.BOOT_NONE:
+	default:
+		return nil, fmt.Errorf("invalid boot mode specified when generating partition table: %s", bootmode)
+	}
+
+	if customizations == nil {
+		// TODO: return required partitions
+		return pt, nil
+	}
+
+	if customizations.LVM != nil || customizations.Btrfs != nil {
+		// we need a /boot partition to boot LVM or Btrfs, create boot
+		// partition if it does not already exist
+		bootPath := entityPath(pt, "/boot")
+		if bootPath == nil {
+			bootPart := Partition{
+				Type:     XBootLDRPartitionGUID,
+				Bootable: false,
+				Size:     512 * common.MiB,
+				Payload: &Filesystem{
+					Type:         "xfs",
+					Label:        "boot",
+					Mountpoint:   "/boot",
+					FSTabOptions: "defaults",
+				},
+			}
+			pt.Partitions = append(pt.Partitions, bootPart)
+		}
+	}
 
 	if customizations.Plain != nil {
 		for _, partition := range customizations.Plain.Mountpoints {
@@ -204,25 +266,6 @@ func NewCustomPartitionTable(customizations *blueprint.PartitioningCustomization
 	}
 
 	if customizations.LVM != nil {
-		// we need a /boot partition to boot LVM, create boot partition if it
-		// does not already exist
-		bootPath := entityPath(pt, "/boot")
-		if bootPath == nil {
-			// TODO: make "prependBootPartition" function
-			bootPart := Partition{
-				Type:     XBootLDRPartitionGUID,
-				Bootable: false,
-				Size:     512 * common.MiB,
-				Payload: &Filesystem{
-					Type:         "xfs",
-					Label:        "boot",
-					Mountpoint:   "/boot",
-					FSTabOptions: "defaults",
-				},
-			}
-			pt.Partitions = append([]Partition{bootPart}, pt.Partitions...)
-		}
-
 		for _, vg := range customizations.LVM.VolumeGroups {
 			newlvs := make([]LVMLogicalVolume, len(vg.LogicalVolumes))
 			for idx, lv := range vg.LogicalVolumes {
@@ -258,25 +301,6 @@ func NewCustomPartitionTable(customizations *blueprint.PartitioningCustomization
 	}
 
 	if customizations.Btrfs != nil {
-		// we need a /boot partition to boot LVM, create boot partition if it
-		// does not already exist
-		bootPath := entityPath(pt, "/boot")
-		if bootPath == nil {
-			// TODO: make "prependBootPartition" function
-			bootPart := Partition{
-				Type:     XBootLDRPartitionGUID,
-				Bootable: false,
-				Size:     512 * common.MiB,
-				Payload: &Filesystem{
-					Type:         "xfs",
-					Label:        "boot",
-					Mountpoint:   "/boot",
-					FSTabOptions: "defaults",
-				},
-			}
-			pt.Partitions = append([]Partition{bootPart}, pt.Partitions...)
-		}
-
 		for _, btrfsvol := range customizations.Btrfs.Volumes {
 			subvols := make([]BtrfsSubvolume, len(btrfsvol.Subvolumes))
 			for idx, subvol := range btrfsvol.Subvolumes {
