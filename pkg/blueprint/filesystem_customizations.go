@@ -20,7 +20,8 @@ type PartitioningCustomization struct {
 }
 
 type PlainFilesystemCustomization struct {
-	Mountpoints []MountpointCustomization `json:"mountpoints,omitempty" toml:"mountpoints,omitempty"`
+	Mountpoints []MountpointCustomization   `json:"mountpoints,omitempty" toml:"mountpoints,omitempty"`
+	Swap        *SwapPartitionCustomization `json:"swap,omitempty" toml:"swap,omitempty"`
 }
 
 type MountpointCustomization struct {
@@ -28,6 +29,10 @@ type MountpointCustomization struct {
 	MinSize    uint64 `json:"minsize,omitempty" toml:"minsize,omitempty"`
 	Label      string `json:"label,omitempty" toml:"label,omitempty"`
 	Type       string `json:"type,omitempty" toml:"type,omitempty"`
+}
+
+type SwapPartitionCustomization struct {
+	Size uint64 `json:"size" toml:"size"`
 }
 
 type LVMCustomization struct {
@@ -38,8 +43,9 @@ type VGCustomization struct {
 	// Volume group name
 	Name string `json:"name" toml:"name"`
 	// Size of the partition that contains the volume group
-	MinSize        uint64            `json:"minsize" toml:"minsize"`
-	LogicalVolumes []LVCustomization `json:"mountpoints,omitempty" toml:"mountpoints,omitempty"`
+	MinSize        uint64                      `json:"minsize" toml:"minsize"`
+	LogicalVolumes []LVCustomization           `json:"mountpoints,omitempty" toml:"mountpoints,omitempty"`
+	Swap           *SwapPartitionCustomization `json:"swap,omitempty" toml:"swap,omitempty"`
 }
 
 type LVCustomization struct {
