@@ -11,6 +11,11 @@ import (
 
 type FilesystemCustomization MountpointCustomization
 
+// TODO: validate input:
+// - Duplicate mountpoints
+// - No mixing of btrfs and LVM
+// - Only one swap partition or file
+
 type PartitioningCustomization struct {
 	Plain   *PlainFilesystemCustomization `json:"plain,omitempty" toml:"plain,omitempty"`
 	LVM     *LVMCustomization             `json:"lvm,omitempty" toml:"lvm,omitempty"`
