@@ -11,6 +11,18 @@ import (
 
 type FilesystemCustomization MountpointCustomization
 
+type PartitioningCustomization struct {
+	Plain   *PlainFilesystemCustomization `json:"plain,omitempty" toml:"plain,omitempty"`
+	LVM     *LVMCustomization             `json:"lvm,omitempty" toml:"lvm,omitempty"`
+	Btrfs   *BtrfsCustomization           `json:"btrfs,omitempty" toml:"btrfs,omitempty"`
+	LUKS    bool                          `json:"luks" toml:"luks"`
+	LUKSAlt *LUKSCustomization            `json:"luksalt" toml:"luksalt"` // alternative to the boolean above
+}
+
+type PlainFilesystemCustomization struct {
+	Mountpoints []MountpointCustomization `json:"mountpoints,omitempty" toml:"mountpoints,omitempty"`
+}
+
 type MountpointCustomization struct {
 	Mountpoint string `json:"mountpoint" toml:"mountpoint"`
 	MinSize    uint64 `json:"minsize,omitempty" toml:"minsize,omitempty"`
@@ -18,14 +30,8 @@ type MountpointCustomization struct {
 	Type       string `json:"type,omitempty" toml:"type,omitempty"`
 }
 
-type PlainFilesystemCustomization struct {
-	Mountpoints []MountpointCustomization `json:"mountpoints,omitempty" toml:"mountpoints,omitempty"`
-}
-
-type LVCustomization struct {
-	// Logical volume name
-	Name string
-	MountpointCustomization
+type LVMCustomization struct {
+	VolumeGroups []VGCustomization `json:"volume-groups,omitempty" toml:"volume-groups,omitempty"`
 }
 
 type VGCustomization struct {
@@ -36,14 +42,14 @@ type VGCustomization struct {
 	LogicalVolumes []LVCustomization `json:"mountpoints,omitempty" toml:"mountpoints,omitempty"`
 }
 
-type LVMCustomization struct {
-	VolumeGroups []VGCustomization `json:"volume-groups,omitempty" toml:"volume-groups,omitempty"`
+type LVCustomization struct {
+	// Logical volume name
+	Name string
+	MountpointCustomization
 }
 
-type BtrfsSubvolumeCustomization struct {
-	Name       string `json:"name" toml:"name"`
-	Mountpoint string `json:"mountpoint" toml:"mountpoint"`
-	// Qgroup in the future??
+type BtrfsCustomization struct {
+	Volumes []BtrfsVolumeCustomization
 }
 
 type BtrfsVolumeCustomization struct {
@@ -52,12 +58,10 @@ type BtrfsVolumeCustomization struct {
 	Subvolumes []BtrfsSubvolumeCustomization
 }
 
-type BtrfsCustomization struct {
-	Volumes []BtrfsVolumeCustomization
-}
-
-type LuksParameterCustomization struct {
-	// Iterations and stuff?
+type BtrfsSubvolumeCustomization struct {
+	Name       string `json:"name" toml:"name"`
+	Mountpoint string `json:"mountpoint" toml:"mountpoint"`
+	// Qgroup in the future??
 }
 
 type LUKSCustomization struct {
@@ -67,12 +71,8 @@ type LUKSCustomization struct {
 	Btrfs  *BtrfsCustomization           `json:"btrfs,omitempty" toml:"btrfs,omitempty"`
 }
 
-type PartitioningCustomization struct {
-	Plain   *PlainFilesystemCustomization `json:"plain,omitempty" toml:"plain,omitempty"`
-	LVM     *LVMCustomization             `json:"lvm,omitempty" toml:"lvm,omitempty"`
-	Btrfs   *BtrfsCustomization           `json:"btrfs,omitempty" toml:"btrfs,omitempty"`
-	LUKS    bool                          `json:"luks" toml:"luks"`
-	LUKSAlt *LUKSCustomization            `json:"luksalt" toml:"luksalt"` // alternative to the boolean above
+type LuksParameterCustomization struct {
+	// Iterations and stuff?
 }
 
 func (fsc *FilesystemCustomization) UnmarshalTOML(data interface{}) error {
