@@ -246,6 +246,87 @@ func TestNewCustomPartitionTable(t *testing.T) {
 				},
 			},
 		},
+		"plain-reqsizes": {
+			customizations: &blueprint.PartitioningCustomization{
+				Plain: &blueprint.PlainFilesystemCustomization{
+					Filesystems: []blueprint.FilesystemCustomization{
+						{
+							Mountpoint: "/data",
+							MinSize:    20 * common.MiB,
+							Label:      "data",
+							Type:       "ext4",
+						},
+					},
+				},
+			},
+			options: &disk.CustomPartitionTableOptions{
+				DefaultFSType:      disk.FS_XFS,
+				BootMode:           platform.BOOT_HYBRID,
+				RequiredSizes:      map[string]uint64{"/": 1 * common.GiB, "/usr": 2 * common.GiB}, // the default for our distro definitions
+				PartitionTableType: "dos",
+			},
+			expected: &disk.PartitionTable{
+				Type: "dos",
+				Size: 222*common.MiB + 3*common.GiB,
+				UUID: "0194fdc2-fa2f-4cc0-81d3-ff12045b73c8",
+				Partitions: []disk.Partition{
+					{
+						Start:    1 * common.MiB, // header
+						Size:     1 * common.MiB,
+						Bootable: true,
+						Type:     disk.BIOSBootPartitionGUID,
+						UUID:     disk.BIOSBootPartitionUUID,
+					},
+					{
+						Start: 2 * common.MiB,
+						Size:  200 * common.MiB,
+						Type:  disk.EFISystemPartitionGUID,
+						UUID:  disk.EFISystemPartitionUUID,
+						Payload: &disk.Filesystem{
+							Type:         "vfat",
+							UUID:         disk.EFIFilesystemUUID,
+							Mountpoint:   "/boot/efi",
+							Label:        "EFI-SYSTEM",
+							FSTabOptions: "defaults,uid=0,gid=0,umask=077,shortname=winnt",
+							FSTabFreq:    0,
+							FSTabPassNo:  2,
+						},
+					},
+					{
+						Start:    202 * common.MiB,
+						Size:     20 * common.MiB,
+						Type:     disk.FilesystemDataGUID,
+						Bootable: false,
+						UUID:     "", // partitions on dos PTs don't have UUIDs
+						Payload: &disk.Filesystem{
+							Type:         "ext4",
+							Label:        "data",
+							Mountpoint:   "/data",
+							UUID:         "6e4ff95f-f662-45ee-a82a-bdf44a2d0b75",
+							FSTabOptions: "defaults",
+							FSTabFreq:    0,
+							FSTabPassNo:  0,
+						},
+					},
+					{
+						Start:    222 * common.MiB,
+						Size:     3 * common.GiB,
+						Type:     disk.FilesystemDataGUID,
+						UUID:     "", // partitions on dos PTs don't have UUIDs
+						Bootable: false,
+						Payload: &disk.Filesystem{
+							Type:         "xfs",
+							Label:        "root",
+							Mountpoint:   "/",
+							UUID:         "fb180daf-48a7-4ee0-b10d-394651850fd4",
+							FSTabOptions: "defaults",
+							FSTabFreq:    0,
+							FSTabPassNo:  0,
+						},
+					},
+				},
+			},
+		},
 		"plain+": {
 			customizations: &blueprint.PartitioningCustomization{
 				Plain: &blueprint.PlainFilesystemCustomization{
@@ -269,10 +350,12 @@ func TestNewCustomPartitionTable(t *testing.T) {
 				DefaultFSType:      disk.FS_EXT4,
 				BootMode:           platform.BOOT_HYBRID,
 				PartitionTableType: "gpt",
+				RequiredSizes:      map[string]uint64{"/": 3 * common.GiB},
 			},
 			expected: &disk.PartitionTable{
 				Type: "gpt",
-				Size: 273 * common.MiB,
+				Size: 222*common.MiB + 3*common.GiB + common.MiB, // start + size of last partition + footer
+
 				UUID: "0194fdc2-fa2f-4cc0-81d3-ff12045b73c8",
 				Partitions: []disk.Partition{
 					{
@@ -300,7 +383,7 @@ func TestNewCustomPartitionTable(t *testing.T) {
 					// root is aligned to the end but not reindexed
 					{
 						Start:    222 * common.MiB,
-						Size:     51*common.MiB - (disk.DefaultSectorSize + (128 * 128)), // grows by 1 grain size (1 MiB) minus the unaligned size of the header to fit the gpt footer
+						Size:     3*common.GiB + common.MiB - (disk.DefaultSectorSize + (128 * 128)), // grows by 1 grain size (1 MiB) minus the unaligned size of the header to fit the gpt footer
 						Type:     disk.FilesystemDataGUID,
 						UUID:     "a178892e-e285-4ce1-9114-55780875d64e",
 						Bootable: false,
@@ -379,7 +462,7 @@ func TestNewCustomPartitionTable(t *testing.T) {
 			expected: &disk.PartitionTable{
 				Type: "gpt", // default when unspecified
 				UUID: "0194fdc2-fa2f-4cc0-81d3-ff12045b73c8",
-				Size: 879 * common.MiB,
+				Size: 714*common.MiB + 164*common.MiB + common.MiB, // start + size of last partition (VG) + footer
 				Partitions: []disk.Partition{
 					{
 						Start:    1 * common.MiB, // header
@@ -421,7 +504,7 @@ func TestNewCustomPartitionTable(t *testing.T) {
 					},
 					{
 						Start:    714 * common.MiB,
-						Size:     165*common.MiB - (disk.DefaultSectorSize + (128 * 128)), // includes 4 MiB LVM header (after rounding to the next extent) - gpt footer the same size as the header (unaligned)
+						Size:     164*common.MiB + common.MiB - (disk.DefaultSectorSize + (128 * 128)), // the sum of the LVs (rounded to the next 4 MiB extent) grows by 1 grain size (1 MiB) minus the unaligned size of the header to fit the gpt footer
 						Type:     disk.LVMPartitionGUID,
 						UUID:     "32f3a8ae-b79e-4856-b659-c18f0dcecc77",
 						Bootable: false,
@@ -499,7 +582,7 @@ func TestNewCustomPartitionTable(t *testing.T) {
 			},
 			expected: &disk.PartitionTable{
 				Type: "gpt",
-				Size: 945 * common.MiB,
+				Size: 714*common.MiB + 230*common.MiB + common.MiB, // start + size of last partition + footer
 				UUID: "0194fdc2-fa2f-4cc0-81d3-ff12045b73c8",
 				Partitions: []disk.Partition{
 					{
