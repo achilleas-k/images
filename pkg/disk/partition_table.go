@@ -251,7 +251,7 @@ func NewCustomPartitionTable(customizations *blueprint.PartitioningCustomization
 		// default to "gpt"
 		pt.Type = "gpt"
 	default:
-		return nil, fmt.Errorf("invalid partition table type specified when generating partition table: %s", options.PartitionTableType)
+		return nil, fmt.Errorf("error generating partition table: invalid partition table type: %s", options.PartitionTableType)
 	}
 
 	// The boot type will be the default only if it's a supported filesystem
