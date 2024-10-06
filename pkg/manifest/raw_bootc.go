@@ -170,6 +170,11 @@ func (p *RawBootcImage) serialize() osbuild.Pipeline {
 	if err != nil {
 		panic(err)
 	}
+	for idx := range fstabOpts.FileSystems {
+		if fstabOpts.FileSystems[idx].Path == "/" {
+			fstabOpts.FileSystems[idx].Path = "/sysroot"
+		}
+	}
 	fstabStage := osbuild.NewFSTabStage(fstabOpts)
 	fstabStage.Mounts = mounts
 	fstabStage.Devices = devices
