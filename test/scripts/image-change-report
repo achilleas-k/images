@@ -27,7 +27,7 @@ def setup_worktree():
         sp.check_output(["git", "branch", "-D", branch_name])
 
 
-def gen_manifests(rev):
+def gen_manifests(rev, workdir):
     sp.check_output(["git", "checkout", rev])
     print(f"Generating manifests for {rev}")
     cmd = ["go", "run", "./cmd/gen-manifests",
@@ -37,7 +37,7 @@ def gen_manifests(rev):
     # don't error out if this fails, some commits might not compile
     env = os.environ
     env["OSBUILD_TESTING_RNG_SEED"] = "2"
-    ret = sp.run(cmd, env=env, capture_output=True, check=False)
+    ret = sp.run(cmd, cwd=workdir, env=env, capture_output=True, check=False)
     if ret.returncode != 0:
         print(f"Manifest generation failed with exit code {ret.returncode}")
         print(ret.stderr)
@@ -70,9 +70,9 @@ def main():
     args = parser.parse_args()
 
     revs = get_rev_list(args.rev1, args.rev2)
-    with setup_worktree():
+    with setup_worktree() as workdir:
         for rev in revs:
-            gen_manifests(rev)
+            gen_manifests(rev, workdir)
         for a, b in zip(revs[:-1], revs[1:]):
             diff_manifests(a, b)
         input()
