@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+import argparse
+import json
+import os
+import subprocess as sp
+import tempfile
+import uuid
+from contextlib import contextmanager
+
+
+def get_rev_list(a, b):
+    rev_list_bytes = sp.check_output(["git", "rev-list", f"{a}..{b}"])
+    rev_list = rev_list_bytes.decode().splitlines()
+    rev_list.reverse()
+    return rev_list
+
+
+@contextmanager
+def setup_worktree():
+    wd = os.path.abspath(".")
+    branch_name = str(uuid.uuid4())
+    with tempfile.TemporaryDirectory() as tmpdir:
+        sp.check_output(["git", "worktree", "add", "-b", branch_name, f"{tmpdir}/repo"])
+        yield tmpdir
+        os.chdir(wd)
+        sp.check_output(["git", "worktree", "remove", "--force", tmpdir])
+        sp.check_output(["git", "branch", "-D", branch_name])
+
+
+def gen_manifests(rev):
+    sp.check_output(["git", "checkout", rev])
+    print(f"Generating manifests for {rev}")
+    cmd = ["go", "run", "./cmd/gen-manifests",
+           "--output", f"{rev}/manifests/",
+           "--commits=false", "--packages=false", "--containers=false", "--metadata=false",
+           "--workers", "100"]
+    # don't error out if this fails, some commits might not compile
+    env = os.environ
+    env["OSBUILD_TESTING_RNG_SEED"] = "2"
+    ret = sp.run(cmd, env=env, capture_output=True, check=False)
+    if ret.returncode != 0:
+        print(f"Manifest generation failed with exit code {ret.returncode}")
+        print(ret.stderr)
+        return
+
+    with open(f"{rev}/info.json", mode="w", encoding="utf-8") as info_file:
+        info = {
+            "commit": rev,
+        }
+        json.dump(info, info_file)
+
+
+def diff_manifests(a, b):
+    fname = f"{b}/changes.diff"
+    print(f"Generating {fname}")
+    diff_proc = sp.run(["diff", "-r", a, b], capture_output=True, check=False)
+    diff = diff_proc.stdout.decode()
+    if diff:
+        with open(fname, mode="w", encoding="utf-8") as diff_file:
+            print("changes")
+            diff_file.write(diff)
+    # else:
+        # print(f"No changes between {a} and {b}")
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("rev1")
+    parser.add_argument("rev2")
+    args = parser.parse_args()
+
+    revs = get_rev_list(args.rev1, args.rev2)
+    with setup_worktree():
+        for rev in revs:
+            gen_manifests(rev)
+        for a, b in zip(revs[:-1], revs[1:]):
+            diff_manifests(a, b)
+        input()
+
+
+if __name__ == "__main__":
+    main()
