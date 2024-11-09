@@ -47,17 +47,18 @@ def gen_manifests(rev, workdir):
 
 
 def diff_manifests(a, b, workdir):
-    fname = f"{workdir}/manifests/{b}/changes.diff"
-    print(f"Generating {fname}")
+    fname = f"{workdir}/manifests/{b}.diff"
+    print(f"Generating {fname}", end=" ", flush=True)
     diff_proc = sp.run(["diff", "-r", f"{workdir}/manifests/{a}", f"{workdir}/manifests/{b}"],
                        capture_output=True, check=False)
     diff = diff_proc.stdout.decode()
     if diff:
         with open(fname, mode="w", encoding="utf-8") as diff_file:
-            print("changes")
+            print("changes found")
             diff_file.write(diff)
-    # else:
-        # print(f"No changes between {a} and {b}")
+            print(diff)
+    else:
+        print(f"No changes between {a} and {b}")
 
 
 def main():
