@@ -99,7 +99,7 @@ func (img *AnacondaContainerInstaller) InstantiateManifest(m *manifest.Manifest,
 	anacondaPipeline.AdditionalDrivers = img.AdditionalDrivers
 
 	rootfsImagePipeline := manifest.NewISORootfsImg(buildPipeline, anacondaPipeline)
-	rootfsImagePipeline.Size = 4 * datasizes.GibiByte
+	rootfsImagePipeline.Size = 12 * datasizes.GibiByte
 
 	bootTreePipeline := manifest.NewEFIBootTree(buildPipeline, img.Product, img.OSVersion)
 	bootTreePipeline.Platform = img.Platform
