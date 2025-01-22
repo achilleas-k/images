@@ -414,6 +414,17 @@ func (t *ImageType) Manifest(bp *blueprint.Blueprint,
 	return &mf, warnings, err
 }
 
+func (t *ImageType) SerializedManifest(bp *blueprint.Blueprint,
+	options distro.ImageOptions,
+	repos []rpmmd.RepoConfig,
+	resolvers distro.Resolvers,
+	serOptions *manifest.SerializeOptions,
+	seed *int64) (manifest.OSBuildManifest, []string, error) {
+
+	// FIXME: I am a stub
+	return nil, nil, nil
+}
+
 // checkOptions checks the validity and compatibility of options and customizations for the image type.
 // Returns ([]string, error) where []string, if non-nil, will hold any generated warnings (e.g. deprecation notices).
 func (t *ImageType) checkOptions(bp *blueprint.Blueprint, options distro.ImageOptions) ([]string, error) {

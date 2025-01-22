@@ -305,6 +305,17 @@ func (t *TestImageType) Manifest(b *blueprint.Blueprint, options distro.ImageOpt
 	return m, nil, nil
 }
 
+func (t *TestImageType) SerializedManifest(bp *blueprint.Blueprint,
+	options distro.ImageOptions,
+	repos []rpmmd.RepoConfig,
+	resolvers distro.Resolvers,
+	serOptions *manifest.SerializeOptions,
+	seed *int64) (manifest.OSBuildManifest, []string, error) {
+
+	// FIXME: I am a stub
+	return nil, nil, nil
+}
+
 // newTestDistro returns a new instance of TestDistro with the
 // given release version.
 //

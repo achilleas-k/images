@@ -332,6 +332,37 @@ func (t *imageType) Manifest(bp *blueprint.Blueprint,
 	return &mf, warnings, err
 }
 
+func (t *imageType) SerializedManifest(bp *blueprint.Blueprint,
+	options distro.ImageOptions,
+	repos []rpmmd.RepoConfig,
+	resolvers distro.Resolvers,
+	serOptions *manifest.SerializeOptions,
+	seed *int64) (manifest.OSBuildManifest, []string, error) {
+
+	premf, warn, err := t.Manifest(bp, options, repos, seed)
+	if err != nil {
+		return nil, warn, err
+	}
+	packages, err := resolvers.Depsolve(premf.GetPackageSetChains())
+
+	if err != nil {
+		return nil, warn, err
+	}
+
+	containers, err := resolvers.ResolveContainers(premf.GetContainerSourceSpecs())
+	if err != nil {
+		return nil, warn, err
+	}
+
+	ostreeCommits, err := resolvers.ResolveCommits(premf.GetOSTreeSourceSpecs())
+	if err != nil {
+		return nil, warn, err
+	}
+
+	mf, err := premf.Serialize(packages, containers, ostreeCommits, serOptions)
+	return mf, warn, err
+}
+
 // checkOptions checks the validity and compatibility of options and customizations for the image type.
 // Returns ([]string, error) where []string, if non-nil, will hold any generated warnings (e.g. deprecation notices).
 func (t *imageType) checkOptions(bp *blueprint.Blueprint, options distro.ImageOptions) ([]string, error) {
