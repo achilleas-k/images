@@ -18,6 +18,7 @@ import (
 	"github.com/osbuild/images/pkg/manifest"
 	"github.com/osbuild/images/pkg/manifestgen"
 	"github.com/osbuild/images/pkg/osbuild"
+	"github.com/osbuild/images/pkg/ostree"
 	"github.com/osbuild/images/pkg/rhsm/facts"
 	"github.com/osbuild/images/pkg/rpmmd"
 )
@@ -73,7 +74,7 @@ func makeManifest(
 		return nil, fmt.Errorf("[ERROR] container resolution failed: %w", err)
 	}
 
-	commitSpecs, err := manifestgen.DefaultCommitResolver(manifest.GetOSTreeSourceSpecs())
+	commitSpecs, err := ostree.ResolveAll(manifest.GetOSTreeSourceSpecs())
 	if err != nil {
 		return nil, fmt.Errorf("[ERROR] ostree commit resolution failed: %w", err)
 	}
