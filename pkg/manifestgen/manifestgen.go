@@ -97,7 +97,9 @@ func New(reporegistry *reporegistry.RepoRegistry, opts *Options) (*Generator, er
 		mg.depsolver = DefaultDepsolver
 	}
 	if mg.containerResolver == nil {
-		mg.containerResolver = DefaultContainerResolver
+		mg.containerResolver = func(containerSources map[string][]container.SourceSpec, archName string) (map[string][]container.Spec, error) {
+			return container.NewBlockingResolver(archName).ResolveAll(containerSources)
+		}
 	}
 	if mg.commitResolver == nil {
 		mg.commitResolver = ostree.ResolveAll
@@ -221,22 +223,6 @@ func resolveContainers(containers []container.SourceSpec, archName string) ([]co
 	}
 
 	return resolver.Finish()
-}
-
-// DefaultContainersResolve provides a default implementation for
-// container resolving.
-// It should rarely be necessary to use it directly and will be used
-// by default by manifestgen (unless overriden)
-func DefaultContainerResolver(containerSources map[string][]container.SourceSpec, archName string) (map[string][]container.Spec, error) {
-	containerSpecs := make(map[string][]container.Spec, len(containerSources))
-	for plName, sourceSpecs := range containerSources {
-		specs, err := resolveContainers(sourceSpecs, archName)
-		if err != nil {
-			return nil, fmt.Errorf("error container resolving: %w", err)
-		}
-		containerSpecs[plName] = specs
-	}
-	return containerSpecs, nil
 }
 
 type (
