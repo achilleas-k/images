@@ -270,7 +270,7 @@ func makeManifestJob(
 
 		var containerSpecs map[string][]container.Spec
 		if content["containers"] {
-			containerSpecs, err = manifestgen.DefaultContainerResolver(manifest.GetContainerSourceSpecs(), archName)
+			containerSpecs, err = container.NewResolver(archName).ResolveAll(manifest.GetContainerSourceSpecs())
 			if err != nil {
 				return fmt.Errorf("[%s] container resolution failed: %s", filename, err.Error())
 			}
