@@ -87,11 +87,11 @@ type InstallSection struct {
 
 type SystemdUnit struct {
 	Unit    *UnitSection    `json:"Unit"`
-	Service *ServiceSection `json:"Service"`
+	Service *ServiceSection `json:"Service,omitempty"`
 	Mount   *MountSection   `json:"Mount,omitempty"`
 	Socket  *SocketSection  `json:"Socket,omitempty"`
 	Swap    *SwapSection    `json:"Swap,omitempty"`
-	Install *InstallSection `json:"Install"`
+	Install *InstallSection `json:"Install,omitempty"`
 }
 
 type SystemdUnitCreateStageOptions struct {
