@@ -4,6 +4,11 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
+	"sort"
+	"strings"
+
+	"github.com/osbuild/images/internal/common"
+	"github.com/osbuild/images/pkg/disk"
 )
 
 const unitFilenameRegex = "^[\\w:.\\\\-]+[@]{0,1}[\\w:.\\\\-]*\\.(service|mount|socket|swap)$"
@@ -222,4 +227,79 @@ func NewSystemdUnitCreateStage(options *SystemdUnitCreateStageOptions) *Stage {
 		Type:    "org.osbuild.systemd.unit.create",
 		Options: options,
 	}
+}
+
+// GenSystemdMountStages generates a collection of
+// org.osbuild.systemd.unit.create stages with options to create systemd mount
+// units, one for each mountpoint in the partition table.
+func GenSystemdMountStages(pt *disk.PartitionTable) ([]*Stage, error) {
+	mountStages := make([]*Stage, 0)
+
+	genOption := func(ent disk.FSTabEntity, path []disk.Entity) error {
+		fsSpec := ent.GetFSSpec()
+		fsOptions, err := ent.GetFSTabOptions()
+		if err != nil {
+			return err
+		}
+
+		var options *SystemdUnitCreateStageOptions
+		device := fmt.Sprintf("/dev/disk/by-uuid/%s", strings.ToLower(fsSpec.UUID))
+		switch ent.GetFSType() {
+		case "swap":
+			options = &SystemdUnitCreateStageOptions{
+				Filename: fmt.Sprintf("%s.swap", pathEscape(device)),
+				Config: SystemdUnit{
+					Unit: &UnitSection{
+						// Adds the following dependencies:
+						//  - Before=umount.target
+						//  - Conflicts=umount.target
+						// See systemd.swap(5).
+						DefaultDependencies: common.ToPtr(true),
+					},
+					Swap: &SwapSection{
+						What:    device,
+						Options: fsOptions.MntOps,
+					},
+				},
+			}
+		default:
+			options = &SystemdUnitCreateStageOptions{
+				Filename: fmt.Sprintf("%s.mount", pathEscape(ent.GetFSFile())),
+				Config: SystemdUnit{
+					Unit: &UnitSection{
+						// Adds the following dependencies:
+						//  - Before=umount.target
+						//  - Conflicts=umount.target
+						//  - After=local-fs-pre.target
+						//  - Before=local-fs.target
+						// See systemd.mount(5).
+						DefaultDependencies: common.ToPtr(true),
+					},
+					Mount: &MountSection{
+						What:    device,
+						Where:   ent.GetFSFile(),
+						Type:    ent.GetFSType(),
+						Options: fsOptions.MntOps,
+					},
+				},
+			}
+		}
+
+		mountStages = append(mountStages, NewSystemdUnitCreateStage(options))
+		return nil
+	}
+
+	err := pt.ForEachFSTabEntity(genOption)
+	if err != nil {
+		return nil, err
+	}
+
+	// sort the entries by filename for stable ordering
+	sort.Slice(mountStages, func(i, j int) bool {
+		optsi := mountStages[i].Options.(*SystemdUnitCreateStageOptions)
+		optsj := mountStages[j].Options.(*SystemdUnitCreateStageOptions)
+		return optsi.Filename < optsj.Filename
+	})
+
+	return mountStages, nil
 }
