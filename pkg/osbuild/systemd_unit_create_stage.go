@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/osbuild/images/internal/common"
 	"github.com/osbuild/images/pkg/disk"
 )
@@ -246,8 +247,8 @@ func GenSystemdMountStages(pt *disk.PartitionTable) ([]*Stage, error) {
 		var filename string
 		var options *SystemdUnitCreateStageOptions
 		device := fmt.Sprintf("/dev/disk/by-uuid/%s", strings.ToLower(fsSpec.UUID))
-		// vfat IDs aren't lowercased
-		if ent.GetFSType() == disk.FS_VFAT.String() {
+		if err := uuid.Validate(fsSpec.UUID); err != nil {
+			// vfat IDs and other non-UUID identifiers aren't lowercased
 			device = fmt.Sprintf("/dev/disk/by-uuid/%s", fsSpec.UUID)
 		}
 		switch ent.GetFSType() {
