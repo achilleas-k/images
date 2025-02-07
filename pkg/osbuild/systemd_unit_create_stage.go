@@ -234,6 +234,7 @@ func NewSystemdUnitCreateStage(options *SystemdUnitCreateStageOptions) *Stage {
 // units, one for each mountpoint in the partition table.
 func GenSystemdMountStages(pt *disk.PartitionTable) ([]*Stage, error) {
 	mountStages := make([]*Stage, 0)
+	unitNames := make([]string, 0)
 
 	genOption := func(ent disk.FSTabEntity, path []disk.Entity) error {
 		fsSpec := ent.GetFSSpec()
@@ -242,12 +243,18 @@ func GenSystemdMountStages(pt *disk.PartitionTable) ([]*Stage, error) {
 			return err
 		}
 
+		var filename string
 		var options *SystemdUnitCreateStageOptions
 		device := fmt.Sprintf("/dev/disk/by-uuid/%s", strings.ToLower(fsSpec.UUID))
+		// vfat IDs aren't lowercased
+		if ent.GetFSType() == disk.FS_VFAT.String() {
+			device = fmt.Sprintf("/dev/disk/by-uuid/%s", fsSpec.UUID)
+		}
 		switch ent.GetFSType() {
 		case "swap":
+			filename = fmt.Sprintf("%s.swap", pathEscape(device))
 			options = &SystemdUnitCreateStageOptions{
-				Filename: fmt.Sprintf("%s.swap", pathEscape(device)),
+				Filename: filename,
 				Config: SystemdUnit{
 					Unit: &UnitSection{
 						// Adds the following dependencies:
@@ -260,11 +267,15 @@ func GenSystemdMountStages(pt *disk.PartitionTable) ([]*Stage, error) {
 						What:    device,
 						Options: fsOptions.MntOps,
 					},
+					Install: &InstallSection{
+						WantedBy: []string{"multi-user.target"},
+					},
 				},
 			}
 		default:
+			filename = fmt.Sprintf("%s.mount", pathEscape(ent.GetFSFile()))
 			options = &SystemdUnitCreateStageOptions{
-				Filename: fmt.Sprintf("%s.mount", pathEscape(ent.GetFSFile())),
+				Filename: filename,
 				Config: SystemdUnit{
 					Unit: &UnitSection{
 						// Adds the following dependencies:
@@ -281,11 +292,15 @@ func GenSystemdMountStages(pt *disk.PartitionTable) ([]*Stage, error) {
 						Type:    ent.GetFSType(),
 						Options: fsOptions.MntOps,
 					},
+					Install: &InstallSection{
+						WantedBy: []string{"multi-user.target"},
+					},
 				},
 			}
 		}
 
 		mountStages = append(mountStages, NewSystemdUnitCreateStage(options))
+		unitNames = append(unitNames, filename)
 		return nil
 	}
 
@@ -300,6 +315,12 @@ func GenSystemdMountStages(pt *disk.PartitionTable) ([]*Stage, error) {
 		optsj := mountStages[j].Options.(*SystemdUnitCreateStageOptions)
 		return optsi.Filename < optsj.Filename
 	})
+
+	enableStage := NewSystemdStage(&SystemdStageOptions{
+		EnabledServices: unitNames,
+	})
+
+	mountStages = append(mountStages, enableStage)
 
 	return mountStages, nil
 }
