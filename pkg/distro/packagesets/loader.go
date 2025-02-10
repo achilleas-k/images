@@ -16,9 +16,9 @@ import (
 var Data embed.FS
 
 type packageSet struct {
-	Include   []string   `yaml:"include"`
-	Exclude   []string   `yaml:"exclude"`
-	Condition conditions `yaml:"condition,omitempty"`
+	Include   []string    `yaml:"include"`
+	Exclude   []string    `yaml:"exclude"`
+	Condition *conditions `yaml:"condition,omitempty"`
 }
 
 type conditions struct {
@@ -59,35 +59,37 @@ func Load(it distro.ImageType, replacements map[string]string) rpmmd.PackageSet 
 		Exclude: pkgSet.Exclude,
 	}
 
-	// handle conditions
-	if archSet, ok := pkgSet.Condition.Architecture[archName]; ok {
-		rpmmdPkgSet = rpmmdPkgSet.Append(rpmmd.PackageSet{
-			Include: archSet.Include,
-			Exclude: archSet.Exclude,
-		})
-	}
-
-	for ltVer, ltSet := range pkgSet.Condition.VersionLessThan {
-		if r, ok := replacements[ltVer]; ok {
-			ltVer = r
-		}
-		if common.VersionLessThan(distroVersion, ltVer) {
+	if pkgSet.Condition != nil {
+		// process conditions
+		if archSet, ok := pkgSet.Condition.Architecture[archName]; ok {
 			rpmmdPkgSet = rpmmdPkgSet.Append(rpmmd.PackageSet{
-				Include: ltSet.Include,
-				Exclude: ltSet.Exclude,
+				Include: archSet.Include,
+				Exclude: archSet.Exclude,
 			})
 		}
-	}
 
-	for gteqVer, gteqSet := range pkgSet.Condition.VersionGreaterOrEqual {
-		if r, ok := replacements[gteqVer]; ok {
-			gteqVer = r
+		for ltVer, ltSet := range pkgSet.Condition.VersionLessThan {
+			if r, ok := replacements[ltVer]; ok {
+				ltVer = r
+			}
+			if common.VersionLessThan(distroVersion, ltVer) {
+				rpmmdPkgSet = rpmmdPkgSet.Append(rpmmd.PackageSet{
+					Include: ltSet.Include,
+					Exclude: ltSet.Exclude,
+				})
+			}
 		}
-		if common.VersionGreaterThanOrEqual(distroVersion, gteqVer) {
-			rpmmdPkgSet = rpmmdPkgSet.Append(rpmmd.PackageSet{
-				Include: gteqSet.Include,
-				Exclude: gteqSet.Exclude,
-			})
+
+		for gteqVer, gteqSet := range pkgSet.Condition.VersionGreaterOrEqual {
+			if r, ok := replacements[gteqVer]; ok {
+				gteqVer = r
+			}
+			if common.VersionGreaterThanOrEqual(distroVersion, gteqVer) {
+				rpmmdPkgSet = rpmmdPkgSet.Append(rpmmd.PackageSet{
+					Include: gteqSet.Include,
+					Exclude: gteqSet.Exclude,
+				})
+			}
 		}
 	}
 
