@@ -10,27 +10,39 @@ import (
 	"strings"
 )
 
+// CommandLineOptions defines the command line options for the osbuild call.
+type CommandLineOptions struct {
+	// --store option
+	Store string
+	// --output-directory option
+	OutputDirectory string
+	// --export option (multiple)
+	Exports []string
+	// --checkpoint option (multiple)
+	Checkpoints []string
+}
+
 // Run an instance of osbuild, returning a parsed osbuild.Result.
 //
 // Note that osbuild returns non-zero when the pipeline fails. This function
 // does not return an error in this case. Instead, the failure is communicated
 // with its corresponding logs through osbuild.Result.
-func RunOSBuild(manifest []byte, store, outputDirectory string, exports, checkpoints, extraEnv []string, result bool, errorWriter io.Writer) (*Result, error) {
+func RunOSBuild(manifest []byte, clopts CommandLineOptions, extraEnv []string, result bool, errorWriter io.Writer) (*Result, error) {
 	var stdoutBuffer bytes.Buffer
 	var res Result
 
 	cmd := exec.Command(
 		"osbuild",
-		"--store", store,
-		"--output-directory", outputDirectory,
+		"--store", clopts.Store,
+		"--output-directory", clopts.OutputDirectory,
 		"-",
 	)
 
-	for _, export := range exports {
+	for _, export := range clopts.Exports {
 		cmd.Args = append(cmd.Args, "--export", export)
 	}
 
-	for _, checkpoint := range checkpoints {
+	for _, checkpoint := range clopts.Checkpoints {
 		cmd.Args = append(cmd.Args, "--checkpoint", checkpoint)
 	}
 
