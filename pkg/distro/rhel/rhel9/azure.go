@@ -84,6 +84,29 @@ func mkAzureSapInternalImgType(rd *rhel.Distribution) *rhel.ImageType {
 	return it
 }
 
+// Azure Confidential VM
+func mkAzureCVMImgType(rd *rhel.Distribution) *rhel.ImageType {
+	it := rhel.NewImageType(
+		"vhd-cvm",
+		"disk.vhd",
+		"application/x-vhd",
+		map[string]rhel.PackageSetFunc{
+			rhel.OSPkgsKey: azureCVMPackageSet,
+		},
+		rhel.DiskImage,
+		[]string{"build"},
+		[]string{"os", "image", "vpc"},
+		[]string{"vpc"},
+	)
+
+	it.Bootable = true
+	it.DefaultSize = 4 * datasizes.GibiByte
+	it.DefaultImageConfig = azureCVMImageConfig(rd)
+	it.BasePartitionTables = defaultBasePartitionTables
+
+	return it
+}
+
 // PACKAGE SETS
 
 // Common Azure image package set
@@ -175,6 +198,40 @@ func azurePackageSet(t *rhel.ImageType) rpmmd.PackageSet {
 // Includes the common azure package set, the common SAP packages
 func azureSapPackageSet(t *rhel.ImageType) rpmmd.PackageSet {
 	return azureCommonPackageSet(t).Append(SapPackageSet(t))
+}
+
+func azureCVMPackageSet(_ *rhel.ImageType) rpmmd.PackageSet {
+	return rpmmd.PackageSet{
+		Include: []string{
+			"@minimal-environment",
+
+			"cloud-init",
+			"cloud-utils-growpart",
+			"cryptsetup",
+			"NetworkManager-cloud-setup",
+			"openssh-server",
+			"redhat-release",
+			"tpm2-tools",
+			"WALinuxAgent",
+
+			"python3-dnf-plugin-versionlock",
+		},
+		Exclude: []string{
+			"dracut-config-rescue",
+			"iwl*",
+			"kernel",
+			"kernel-core",
+			"kernel-modules",
+			"linux-firmware*",
+
+			"grub2-common",
+			"grub2-efi-x64",
+			"grub2-tools",
+			"grub2-tools-minimal",
+			"grubby",
+			"os-prober",
+		},
+	}
 }
 
 // PARTITION TABLES
@@ -579,4 +636,43 @@ func defaultAzureImageConfig(rd *rhel.Distribution) *distro.ImageConfig {
 
 func sapAzureImageConfig(rd *rhel.Distribution) *distro.ImageConfig {
 	return sapImageConfig(rd.OsVersion()).InheritFrom(defaultAzureImageConfig(rd))
+}
+
+func azureCVMImageConfig(rd *rhel.Distribution) *distro.ImageConfig {
+	ic := &distro.ImageConfig{
+		Timezone: common.ToPtr("Etc/UTC"),
+		Locale:   common.ToPtr("en_US.UTF-8"),
+		Keyboard: &osbuild.KeymapStageOptions{
+			Keymap: "us",
+			X11Keymap: &osbuild.X11KeymapOptions{
+				Layouts: []string{"us"},
+			},
+		},
+		EnabledServices: []string{
+			"cloud-config",
+			"cloud-final",
+			"cloud-init",
+			"cloud-init-local",
+			"NetworkManager",
+			"nm-cloud-setup.service",
+			"nm-cloud-setup.timer",
+			"sshd",
+			"waagent",
+		},
+
+		DefaultTarget: common.ToPtr("multi-user.target"),
+
+		// TODO: things in kickstart we don't support yet
+		// - firewall-offline-cmd --disabled
+		// - network --bootproto=dhcp --hostname=localhost.localdomain
+		// - yum versionlock add shim-x64
+		// - default kernel: kernel-uki-virt  <-- this is the big one
+	}
+
+	if rd.IsRHEL() {
+		// TODO: keep from others?
+		ic.GPGKeyFiles = append(ic.GPGKeyFiles, "/etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release")
+	}
+
+	return ic
 }
