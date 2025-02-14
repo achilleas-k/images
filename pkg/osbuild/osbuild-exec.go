@@ -27,7 +27,7 @@ type CommandLineOptions struct {
 // Note that osbuild returns non-zero when the pipeline fails. This function
 // does not return an error in this case. Instead, the failure is communicated
 // with its corresponding logs through osbuild.Result.
-func RunOSBuild(manifest []byte, clopts CommandLineOptions, extraEnv []string, result bool, errorWriter io.Writer) (*Result, error) {
+func Run(manifest []byte, clopts CommandLineOptions, extraEnv []string, result bool, errorWriter io.Writer) (*Result, error) {
 	var stdoutBuffer bytes.Buffer
 	var res Result
 

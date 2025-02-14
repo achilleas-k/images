@@ -62,7 +62,7 @@ func RunPlayground(img image.ImageKind, d distro.Distro, arch distro.Arch, repos
 		Exports:         manifest.GetExports(),
 		Checkpoints:     manifest.GetCheckpoints(),
 	}
-	_, err = osbuild.RunOSBuild(bytes, osbuildOptions, nil, false, os.Stdout)
+	_, err = osbuild.Run(bytes, osbuildOptions, nil, false, os.Stdout)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "could not run osbuild: %s", err.Error())
 	}

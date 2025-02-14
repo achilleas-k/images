@@ -145,7 +145,7 @@ func run() error {
 		Exports:         imgType.Exports(),
 		Checkpoints:     checkpoints,
 	}
-	_, err = osbuild.RunOSBuild(mf.Bytes(), osbuildOptions, nil, false, os.Stderr)
+	_, err = osbuild.Run(mf.Bytes(), osbuildOptions, nil, false, os.Stderr)
 	if err != nil {
 		return err
 	}
