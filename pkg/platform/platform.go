@@ -19,6 +19,14 @@ const ( // image format enum
 	FORMAT_OVA
 )
 
+type Bootloader int
+
+const ( // bootloader enum
+	BOOTLOADER_NONE Bootloader = iota
+	BOOTLOADER_GRUB2
+	BOOTLOADER_UKI
+)
+
 func (f ImageFormat) String() string {
 	switch f {
 	case FORMAT_UNSET:
