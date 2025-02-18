@@ -666,7 +666,7 @@ func azureCVMImageConfig(rd *rhel.Distribution) *distro.ImageConfig {
 		// - firewall-offline-cmd --disabled
 		// - network --bootproto=dhcp --hostname=localhost.localdomain
 		// - yum versionlock add shim-x64
-		// - default kernel: kernel-uki-virt  <-- this is the big one
+		DefaultKernelName: common.ToPtr("kernel-uki-virt"),
 	}
 
 	if rd.IsRHEL() {
