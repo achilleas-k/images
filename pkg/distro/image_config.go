@@ -23,6 +23,9 @@ type ImageConfig struct {
 	DefaultTarget       *string
 	Sysconfig           []*osbuild.SysconfigStageOptions
 
+	// The name of the default kernel to use for the image type
+	DefaultKernelName *string
+
 	// List of files from which to import GPG keys into the RPM database
 	GPGKeyFiles []string
 
