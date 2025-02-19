@@ -661,10 +661,11 @@ func azureCVMImageConfig(rd *rhel.Distribution) *distro.ImageConfig {
 		},
 
 		DefaultTarget: common.ToPtr("multi-user.target"),
+		// TODO: add
+		// - network --bootproto=dhcp --hostname=localhost.localdomain
 
 		// TODO: things in kickstart we don't support yet
 		// - firewall-offline-cmd --disabled
-		// - network --bootproto=dhcp --hostname=localhost.localdomain
 		// - yum versionlock add shim-x64
 		DefaultKernelName: common.ToPtr("kernel-uki-virt"),
 	}
