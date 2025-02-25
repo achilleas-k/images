@@ -659,13 +659,15 @@ func azureCVMImageConfig(rd *rhel.Distribution) *distro.ImageConfig {
 			"sshd",
 			"waagent",
 		},
+		MaskedServices: []string{
+			"firewalld.service",
+		},
 
 		DefaultTarget: common.ToPtr("multi-user.target"),
 		// TODO: add
 		// - network --bootproto=dhcp --hostname=localhost.localdomain
 
 		// TODO: things in kickstart we don't support yet
-		// - firewall-offline-cmd --disabled
 		// - yum versionlock add shim-x64
 		DefaultKernelName: common.ToPtr("kernel-uki-virt"),
 	}
