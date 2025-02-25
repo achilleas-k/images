@@ -664,8 +664,18 @@ func azureCVMImageConfig(rd *rhel.Distribution) *distro.ImageConfig {
 		},
 
 		DefaultTarget: common.ToPtr("multi-user.target"),
-		// TODO: add
-		// - network --bootproto=dhcp --hostname=localhost.localdomain
+		Sysconfig: []*osbuild.SysconfigStageOptions{
+			{
+				NetworkScripts: &osbuild.NetworkScriptsOptions{
+					IfcfgFiles: map[string]osbuild.IfcfgFile{
+						"eth0": {
+							Device:    "eth0",
+							Bootproto: osbuild.IfcfgBootprotoDHCP,
+						},
+					},
+				},
+			},
+		},
 
 		// TODO: things in kickstart we don't support yet
 		// - yum versionlock add shim-x64
