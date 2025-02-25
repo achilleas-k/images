@@ -102,7 +102,7 @@ func mkAzureCVMImgType(rd *rhel.Distribution) *rhel.ImageType {
 	it.Bootable = true
 	it.DefaultSize = 4 * datasizes.GibiByte
 	it.DefaultImageConfig = azureCVMImageConfig(rd)
-	it.BasePartitionTables = defaultBasePartitionTables
+	it.BasePartitionTables = azureCVMPartitionTables
 
 	return it
 }
@@ -688,4 +688,44 @@ func azureCVMImageConfig(rd *rhel.Distribution) *distro.ImageConfig {
 	}
 
 	return ic
+}
+
+func azureCVMPartitionTables(t *rhel.ImageType) (disk.PartitionTable, bool) {
+	switch t.Arch().Name() {
+	case arch.ARCH_X86_64.String():
+		return disk.PartitionTable{
+			UUID: "D209C89E-EA5E-4FBD-B161-B461CCE297E0",
+			Type: disk.PT_GPT,
+			Partitions: []disk.Partition{
+				{
+					Size: 200 * datasizes.MebiByte,
+					Type: disk.EFISystemPartitionGUID,
+					UUID: disk.EFISystemPartitionUUID,
+					Payload: &disk.Filesystem{
+						Type:         "vfat",
+						UUID:         disk.EFIFilesystemUUID,
+						Mountpoint:   "/boot/efi",
+						Label:        "EFI-SYSTEM",
+						FSTabOptions: "defaults,uid=0,gid=0,umask=077,shortname=winnt",
+						FSTabFreq:    0,
+						FSTabPassNo:  2,
+					},
+				},
+				{
+					Size: 2 * datasizes.GibiByte,
+					Type: disk.RootPartitionX86_64GUID,
+					Payload: &disk.Filesystem{
+						Type:         "xfs",
+						Label:        "root",
+						Mountpoint:   "/",
+						FSTabOptions: "defaults",
+						FSTabFreq:    0,
+						FSTabPassNo:  0,
+					},
+				},
+			},
+		}, true
+	default:
+		return disk.PartitionTable{}, false
+	}
 }
