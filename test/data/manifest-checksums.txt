@@ -1519,7 +1519,7 @@ cf8914bca1c75f1fd6bbde6f367a4c0f49aaa21d  rhel_9.6-x86_64-image_installer-empty_
 167a6648e96c795c28496b4ac03875267f09b47c  rhel_9.6-x86_64-qcow2-empty_rhel.json
 c2f74441e92428be632d8e0e49e1bc86f6175b6c  rhel_9.6-x86_64-tar-empty_rhel.json
 6f852273d0174f00adac9e249b50e452e3d998d6  rhel_9.6-x86_64-vhd-empty_rhel.json
-dac3ff29b97d0aac8e2d790cd064c819e888b6bb  rhel_9.6-x86_64-vhd_cvm-empty_rhel.json
+e4b713c3f9688ea08f5fbf51dfa6d9b2f4191da2  rhel_9.6-x86_64-vhd_cvm-empty_rhel.json
 02f15127edbe5fd2b5a78770c4c526b8106ab568  rhel_9.6-x86_64-vmdk-empty_rhel.json
 d6a7825751368f3bdc91955f81a71865e7c00886  rhel_9.6-x86_64-wsl-empty_rhel.json
 09eea6d8f56fa6d9e11ebd8e4ad6aa1805b942e4  rhel_9.7-aarch64-ami-all_customizations.json
@@ -1593,6 +1593,6 @@ a5e57b734c1e8602e8c5d9250e1914ab41d8de0b  rhel_9.7-x86_64-image_installer-unatte
 e42aa1352184376382e5c003635eb076529698fb  rhel_9.7-x86_64-qcow2-empty_rhel.json
 bc15522a58ee232b0671ada7484ea8d78423a02c  rhel_9.7-x86_64-tar-empty_rhel.json
 df72e67508465b827e62a16edac01a2829743c4c  rhel_9.7-x86_64-vhd-empty_rhel.json
-bf3d4d5595e14f2f2892cbec5125bc8cac52eea0  rhel_9.7-x86_64-vhd_cvm-empty_rhel.json
+e4107d7393fd8bfe2fe1ae5ddc368962234dff6b  rhel_9.7-x86_64-vhd_cvm-empty_rhel.json
 3f8bbd7d2090503c37735bb31f56afc94a4ce3fa  rhel_9.7-x86_64-vmdk-empty_rhel.json
 378ce58fc0acbd960dc7a5995d1b6c378a3670a5  rhel_9.7-x86_64-wsl-empty_rhel.json
