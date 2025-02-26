@@ -881,6 +881,29 @@ func prependKernelCmdlineStage(pipeline osbuild.Pipeline, kernelOptions []string
 		)
 	}
 
+	if mountUnits {
+		// The systemd-remount-fs service reads /etc/fstab to discover mount
+		// options for / and /usr. Without an /etc/fstab, / and /usr do not get
+		// remounted, which means if they are mounted read-only in the initrd,
+		// they will remain read-only. Flip the option if we're using only
+		// mount units, otherwise the filesystems will stay mounted 'ro'.
+		//
+		// See https://www.freedesktop.org/software/systemd/man/latest/systemd-remount-fs.service.html
+		for idx := range kernelOptions {
+			if kernelOptions[idx] == "ro" {
+				kernelOptions[idx] = "rw"
+				break
+			}
+		}
+
+		// set the rootflags for the same reason as above
+		fsOptions, err := rootFs.GetFSTabOptions()
+		if err != nil {
+			panic(fmt.Sprintf("error getting filesystem options for / mountpoint: %s", err))
+		}
+		kernelOptions = append(kernelOptions, fmt.Sprintf("rootflags=%s", fsOptions.MntOps))
+	}
+
 	rootFsUUID := rootFs.GetFSSpec().UUID
 	kernelStage := osbuild.NewKernelCmdlineStage(osbuild.NewKernelCmdlineStageOptions(rootFsUUID, strings.Join(kernelOptions, " ")))
 	pipeline.Stages = append([]*osbuild.Stage{kernelStage}, pipeline.Stages...)
