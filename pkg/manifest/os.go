@@ -641,10 +641,6 @@ func (p *OS) serialize() osbuild.Pipeline {
 			}))
 		}
 
-		if !p.KernelOptionsBootloader || p.platform.GetArch() == arch.ARCH_S390X {
-			pipeline = prependKernelCmdlineStage(pipeline, strings.Join(kernelOptions, " "), pt)
-		}
-
 		fsCfgStages, err := filesystemConfigStages(pt, p.MountUnits)
 		if err != nil {
 			panic(err)
@@ -705,6 +701,10 @@ func (p *OS) serialize() osbuild.Pipeline {
 		}
 
 		pipeline.AddStage(bootloader)
+
+		if !p.KernelOptionsBootloader || p.platform.GetArch() == arch.ARCH_S390X {
+			pipeline = prependKernelCmdlineStage(pipeline, kernelOptions, pt, p.MountUnits)
+		}
 	}
 
 	if p.RHSMFacts != nil {
@@ -857,13 +857,32 @@ func (p *OS) serialize() osbuild.Pipeline {
 	return pipeline
 }
 
-func prependKernelCmdlineStage(pipeline osbuild.Pipeline, kernelOptions string, pt *disk.PartitionTable) osbuild.Pipeline {
+func prependKernelCmdlineStage(pipeline osbuild.Pipeline, kernelOptions []string, pt *disk.PartitionTable, mountUnits bool) osbuild.Pipeline {
 	rootFs := pt.FindMountable("/")
 	if rootFs == nil {
 		panic("root filesystem must be defined for kernel-cmdline stage, this is a programming error")
 	}
+
+	// if /usr is on a separate filesystem, it needs to be defined in the
+	// kernel cmdline options for autodiscovery (when there's no /etc/fstab)
+	// see:
+	//  - https://github.com/systemd/systemd/issues/24027
+	//  - https://github.com/systemd/systemd/pull/33397
+	if usrFs := pt.FindMountable("/usr"); usrFs != nil && mountUnits {
+		fsOptions, err := usrFs.GetFSTabOptions()
+		if err != nil {
+			panic(fmt.Sprintf("error getting filesystem options for /usr mountpoint: %s", err))
+		}
+		kernelOptions = append(
+			kernelOptions,
+			fmt.Sprintf("mount.usr=UUID=%s", usrFs.GetFSSpec().UUID),
+			fmt.Sprintf("mount.usrfstype=%s", usrFs.GetFSType()),
+			fmt.Sprintf("mount.usrflags=%s", fsOptions.MntOps),
+		)
+	}
+
 	rootFsUUID := rootFs.GetFSSpec().UUID
-	kernelStage := osbuild.NewKernelCmdlineStage(osbuild.NewKernelCmdlineStageOptions(rootFsUUID, kernelOptions))
+	kernelStage := osbuild.NewKernelCmdlineStage(osbuild.NewKernelCmdlineStageOptions(rootFsUUID, strings.Join(kernelOptions, " ")))
 	pipeline.Stages = append([]*osbuild.Stage{kernelStage}, pipeline.Stages...)
 	return pipeline
 }
