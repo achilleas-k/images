@@ -60,6 +60,7 @@ type Platform interface {
 	GetPackages() []string
 	GetBuildPackages() []string
 	GetBootFiles() [][2]string
+	GetBootloader() Bootloader
 }
 
 type BasePlatform struct {
@@ -98,4 +99,8 @@ func (p BasePlatform) GetBuildPackages() []string {
 
 func (p BasePlatform) GetBootFiles() [][2]string {
 	return [][2]string{}
+}
+
+func (p BasePlatform) GetBootloade() Bootloader {
+	return BOOTLOADER_GRUB2
 }

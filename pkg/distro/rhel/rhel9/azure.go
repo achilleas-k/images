@@ -680,6 +680,8 @@ func azureCVMImageConfig(rd *rhel.Distribution) *distro.ImageConfig {
 		// TODO: things in kickstart we don't support yet
 		// - yum versionlock add shim-x64
 		DefaultKernelName: common.ToPtr("kernel-uki-virt"),
+
+		NoBLS: common.ToPtr(true),
 	}
 
 	if rd.IsRHEL() {
@@ -704,7 +706,7 @@ func azureCVMPartitionTables(t *rhel.ImageType) (disk.PartitionTable, bool) {
 					Payload: &disk.Filesystem{
 						Type:         "vfat",
 						UUID:         disk.EFIFilesystemUUID,
-						Mountpoint:   "/boot/efi",
+						Mountpoint:   "/boot",
 						Label:        "EFI-SYSTEM",
 						FSTabOptions: "defaults,uid=0,gid=0,umask=077,shortname=winnt",
 						FSTabFreq:    0,

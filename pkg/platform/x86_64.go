@@ -65,3 +65,7 @@ func (p *X86) GetBuildPackages() []string {
 	}
 	return packages
 }
+
+func (p *X86) GetBootloader() Bootloader {
+	return p.Bootloader
+}
