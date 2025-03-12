@@ -458,6 +458,15 @@ func (p *OS) serialize() osbuild.Pipeline {
 		// https://github.com/osbuild/images/issues/624
 		rpmOptions.DisableDracut = true
 	}
+	if p.platform.GetBootloader() == platform.BOOTLOADER_UKI && p.PartitionTable != nil {
+		espMountpoint, err := findESPMountpoint(p.PartitionTable)
+		if err != nil {
+			panic(err)
+		}
+		rpmOptions.KernelInstallEnv = &osbuild.KernelInstallEnv{
+			BootRoot: espMountpoint,
+		}
+	}
 	pipeline.AddStage(osbuild.NewRPMStage(rpmOptions, osbuild.NewRpmStageSourceFilesInputs(p.packageSpecs)))
 
 	if !p.NoBLS {
@@ -672,7 +681,11 @@ func (p *OS) serialize() osbuild.Pipeline {
 			pipeline.AddStage(osbuild.NewZiplStage(new(osbuild.ZiplStageOptions)))
 			pipeline = prependKernelCmdlineStage(pipeline, rootUUID, kernelOptions)
 		case platform.BOOTLOADER_UKI:
-			csvfile, err := ukiBootCSVfile(pt, p.kernelVer, p.platform.GetUEFIVendor())
+			espMountpoint, err := findESPMountpoint(pt)
+			if err != nil {
+				panic(err)
+			}
+			csvfile, err := ukiBootCSVfile(espMountpoint, p.kernelVer, p.platform.GetUEFIVendor())
 			if err != nil {
 				panic(err)
 			}
@@ -955,15 +968,22 @@ func grubStage(p *OS, pt *disk.PartitionTable, kernelOptions []string) *osbuild.
 // NOTE: This is a temporary workaround. We expect that the kernel-bootcfg
 // command from the python3-virt-firmware package will gain the ability to
 // write these files offline during the RHEL 9.7 / 10.1 development cycle.
-func ukiBootCSVfile(pt *disk.PartitionTable, kernelVer, vendor string) (*fsnode.File, error) {
+func ukiBootCSVfile(espMountpoint, kernelVer, vendor string) (*fsnode.File, error) {
 	kernelFilename := fmt.Sprintf("ffffffffffffffffffffffffffffffff-%s.efi", kernelVer)
 	data := fmt.Sprintf("shimx64.efi,%s,\\EFI\\Linux\\%s ,UKI bootentry\n", vendor, kernelFilename)
 
+	// TODO: what about other architectures
+	csvPath := filepath.Join(espMountpoint, "EFI", vendor, "BOOTX64.CSV")
+
+	return fsnode.NewFile(csvPath, nil, nil, nil, common.EncodeUTF16le(data))
+}
+
+func findESPMountpoint(pt *disk.PartitionTable) (string, error) {
 	// the ESP in our images is always at /boot/efi, but let's make this more
 	// flexible and future proof by finding the ESP mountpoint from the
 	// partition table
 	espMountpoint := ""
-	pt.ForEachMountable(func(mnt disk.Mountable, path []disk.Entity) error {
+	_ = pt.ForEachMountable(func(mnt disk.Mountable, path []disk.Entity) error {
 		parent := path[1]
 		if partition, ok := parent.(*disk.Partition); ok {
 			// ESP filesystem parent must be a plain partition
@@ -978,13 +998,10 @@ func ukiBootCSVfile(pt *disk.PartitionTable, kernelVer, vendor string) (*fsnode.
 	})
 
 	if espMountpoint == "" {
-		return nil, fmt.Errorf("failed to find mountpoint for ESP when generating boot CSV file")
+		return "", fmt.Errorf("failed to find mountpoint for ESP when generating boot CSV file")
 	}
 
-	// TODO: what about other architectures
-	csvPath := filepath.Join(espMountpoint, "EFI", vendor, "BOOTX64.CSV")
-
-	return fsnode.NewFile(csvPath, nil, nil, nil, common.EncodeUTF16le(data))
+	return espMountpoint, nil
 }
 
 func (p *OS) Platform() platform.Platform {
