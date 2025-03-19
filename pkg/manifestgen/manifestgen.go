@@ -231,7 +231,9 @@ func DefaultDepsolver(cacheDir string, packageSets map[string][]rpmmd.PackageSet
 	// need no extra argument here to select the SBOM
 	// type. Once we have more types than Spdx of course
 	// we need to add a option to select the type.
-	return dnfjson.NewSolver(d.ModulePlatformID(), d.Releasever(), arch, d.Name(), cacheDir).DepsolveAll(packageSets, sbom.StandardTypeSpdx)
+	solver := dnfjson.NewSolver(d.ModulePlatformID(), d.Releasever(), arch, d.Name(), cacheDir)
+	solver.SetSBOMType(sbom.StandardTypeSpdx)
+	return solver.DepsolveAll(packageSets)
 }
 
 func resolveContainers(containers []container.SourceSpec, archName string) ([]container.Spec, error) {
