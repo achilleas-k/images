@@ -215,7 +215,7 @@ func makeManifestJob(
 			return
 		}
 
-		var depsolvedSets map[string]dnfjson.DepsolveResult
+		var resolvers distro.Resolvers
 		if content["packages"] {
 			depsolvedSets, err = manifestgen.DefaultDepsolver(cacheDir, manifest.GetPackageSetChains(), distribution, archName)
 			if err != nil {
@@ -228,6 +228,7 @@ func makeManifestJob(
 					return
 				}
 			}
+			resolvers.Depsolve = manifestgen.DefaultDepsolver
 		} else {
 			depsolvedSets = mockDepsolve(manifest.GetPackageSetChains(), repos, archName)
 		}

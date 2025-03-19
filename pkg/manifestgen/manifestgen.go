@@ -57,11 +57,14 @@ type Options struct {
 	// This is mostly useful for testing
 	OverrideRepos []rpmmd.RepoConfig
 
+	// ArchName is the architecture name for the target image.
+	ArchName string
+
 	// Custom "solver" functions, if unset the defaults will be
 	// used. Only needed for specialized use-cases.
-	Depsolver         DepsolveFunc
-	ContainerResolver ContainerResolverFunc
-	CommitResolver    CommitResolverFunc
+	Depsolve          distro.DepsolveFunc
+	ResolveContainers distro.ContainerResolveFunc
+	ResolveCommits    distro.CommitResolveFunc
 }
 
 // Generator can generate an osbuild manifest from a given repository
@@ -70,9 +73,9 @@ type Generator struct {
 	cacheDir string
 	out      io.Writer
 
-	depsolver         DepsolveFunc
-	containerResolver ContainerResolverFunc
-	commitResolver    CommitResolverFunc
+	depsolve          distro.DepsolveFunc
+	resolveContainers distro.ContainerResolveFunc
+	resolveCommits    distro.CommitResolveFunc
 	sbomWriter        SBOMWriterFunc
 	warningsOutput    io.Writer
 
@@ -94,28 +97,14 @@ func New(reporegistry *reporegistry.RepoRegistry, opts *Options) (*Generator, er
 
 		cacheDir:          opts.Cachedir,
 		out:               opts.Output,
-		depsolver:         opts.Depsolver,
-		containerResolver: opts.ContainerResolver,
-		commitResolver:    opts.CommitResolver,
+		depsolve:          opts.Depsolve,
+		resolveContainers: opts.ResolveContainers,
+		resolveCommits:    opts.ResolveCommits,
 		rpmDownloader:     opts.RpmDownloader,
 		sbomWriter:        opts.SBOMWriter,
 		warningsOutput:    opts.WarningsOutput,
 		customSeed:        opts.CustomSeed,
 		overrideRepos:     opts.OverrideRepos,
-	}
-	if mg.out == nil {
-		mg.out = os.Stdout
-	}
-	if mg.depsolver == nil {
-		mg.depsolver = DefaultDepsolver
-	}
-	if mg.containerResolver == nil {
-		mg.containerResolver = func(containerSources map[string][]container.SourceSpec, archName string) (map[string][]container.Spec, error) {
-			return container.NewBlockingResolver(archName).ResolveAll(containerSources)
-		}
-	}
-	if mg.commitResolver == nil {
-		mg.commitResolver = ostree.ResolveAll
 	}
 
 	return mg, nil
@@ -137,11 +126,45 @@ func (mg *Generator) Generate(bp *blueprint.Blueprint, dist distro.Distro, imgTy
 			return err
 		}
 	}
-	// To support "user" a.k.a. "3rd party" repositories, these
-	// will have to be added to the repos with
-	// <repo_item>.PackageSets set to the "payload" pipeline names
-	// for the given image type, see e.g. distro/rhel/imagetype.go:Manifest()
-	preManifest, warnings, err := imgType.Manifest(bp, *imgOpts, repos, mg.customSeed)
+
+	resolvers := distro.Resolvers{
+		Depsolve:          mg.depsolve,
+		ResolveContainers: mg.resolveContainers,
+		ResolveCommits:    mg.resolveCommits,
+	}
+
+	// set fallbacks for any unset resolvers
+	if resolvers.Depsolve == nil {
+		defaultDepsolver, err := DefaultDepsolver(mg.cacheDir, dist, a.Name())
+		if err != nil {
+			return err
+		}
+
+		// Always generate Spdx SBOMs for now, this makes the default depsolve
+		// slightly slower but it means we need no extra argument here to
+		// select the SBOM type. Once we have more types than Spdx of course we
+		// need to add a option to select the type.
+		defaultDepsolver.SetSBOMType(sbom.StandardTypeSpdx)
+		resolvers.Depsolve = defaultDepsolver.DepsolveAll
+	}
+
+	if resolvers.ResolveContainers == nil {
+		resolvers.ResolveContainers = container.NewResolver(a.Name()).ResolveAll
+	}
+
+	if resolvers.ResolveCommits == nil {
+		resolvers.ResolveCommits = ostree.ResolveAll
+	}
+
+	opts := &manifest.SerializeOptions{
+		RpmDownloader: mg.rpmDownloader,
+	}
+
+	// To support "user" a.k.a. "3rd party" repositories, these will have to be
+	// added to the repos with <repo_item>.PackageSets set to the "payload"
+	// pipeline names for the given image type, see e.g.
+	// distro/rhel/imagetype.go:Manifest()
+	mf, warnings, err := imgType.SerializedManifest(bp, *imgOpts, repos, resolvers, opts, mg.customSeed)
 	if err != nil {
 		return err
 	}
@@ -153,31 +176,15 @@ func (mg *Generator) Generate(bp *blueprint.Blueprint, dist distro.Distro, imgTy
 			return fmt.Errorf("Warnings during manifest creation:\n%v", warn)
 		}
 	}
-	depsolved, err := mg.depsolver(mg.cacheDir, preManifest.GetPackageSetChains(), dist, a.Name())
-	if err != nil {
-		return err
-	}
-	containerSpecs, err := mg.containerResolver(preManifest.GetContainerSourceSpecs(), a.Name())
-	if err != nil {
-		return err
-	}
-	commitSpecs, err := mg.commitResolver(preManifest.GetOSTreeSourceSpecs())
-	if err != nil {
-		return err
-	}
-	opts := &manifest.SerializeOptions{
-		RpmDownloader: mg.rpmDownloader,
-	}
-	mf, err := preManifest.Serialize(depsolved, containerSpecs, commitSpecs, opts)
-	if err != nil {
-		return err
-	}
 	fmt.Fprintf(mg.out, "%s\n", mf)
 
 	if mg.sbomWriter != nil {
 		// XXX: this is very similar to
 		// osbuild-composer:jobimpl-osbuild.go, see if code
 		// can be shared
+
+		xxx
+		// NOTE: With new solver way, we can't get the sbom ...
 		for plName, depsolvedPipeline := range depsolved {
 			pipelinePurpose := "unknown"
 			switch {
@@ -216,10 +223,10 @@ func xdgCacheHome() (string, error) {
 	return filepath.Join(home, ".cache"), nil
 }
 
-// DefaultDepsolver provides a default implementation for depsolving.
-// It should rarely be necessary to use it directly and will be used
-// by default by manifestgen (unless overriden)
-func DefaultDepsolver(cacheDir string, packageSets map[string][]rpmmd.PackageSet, d distro.Distro, arch string) (map[string]dnfjson.DepsolveResult, error) {
+// DefaultDepsolver provides a default initialisation of [dnfjson.Solver].
+// It should rarely be necessary to use it directly and will be used by default
+// by manifestgen (unless overriden)
+func DefaultDepsolver(cacheDir string, d distro.Distro, arch string) (*dnfjson.Solver, error) {
 	if cacheDir == "" {
 		xdgCacheHomeDir, err := xdgCacheHome()
 		if err != nil {
@@ -228,14 +235,7 @@ func DefaultDepsolver(cacheDir string, packageSets map[string][]rpmmd.PackageSet
 		cacheDir = filepath.Join(xdgCacheHomeDir, defaultDepsolveCacheDir)
 	}
 
-	// Always generate Spdx SBOMs for now, this makes the
-	// default depsolve slightly slower but it means we
-	// need no extra argument here to select the SBOM
-	// type. Once we have more types than Spdx of course
-	// we need to add a option to select the type.
-	solver := dnfjson.NewSolver(d.ModulePlatformID(), d.Releasever(), arch, d.Name(), cacheDir)
-	solver.SetSBOMType(sbom.StandardTypeSpdx)
-	return solver.DepsolveAll(packageSets)
+	return dnfjson.NewSolver(d.ModulePlatformID(), d.Releasever(), arch, d.Name(), cacheDir), nil
 }
 
 type (
