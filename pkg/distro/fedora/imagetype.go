@@ -343,8 +343,8 @@ func (t *imageType) SerializedManifest(bp *blueprint.Blueprint,
 	if err != nil {
 		return nil, warn, err
 	}
-	packages, err := resolvers.Depsolve(premf.GetPackageSetChains())
 
+	packages, err := resolvers.Depsolve(premf.GetPackageSetChains())
 	if err != nil {
 		return nil, warn, err
 	}
