@@ -6,7 +6,7 @@ import (
 
 	"github.com/osbuild/images/internal/workload"
 	"github.com/osbuild/images/pkg/arch"
-	"github.com/osbuild/images/pkg/blueprint"
+	"github.com/osbuild/blueprint/pkg/blueprint"
 	"github.com/osbuild/images/pkg/container"
 	"github.com/osbuild/images/pkg/customizations/anaconda"
 	"github.com/osbuild/images/pkg/customizations/fdo"

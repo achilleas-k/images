@@ -10,7 +10,7 @@ import (
 
 	genpart "github.com/osbuild/images/cmd/otk/osbuild-gen-partition-table"
 	"github.com/osbuild/images/internal/otkdisk"
-	"github.com/osbuild/images/pkg/blueprint"
+	"github.com/osbuild/blueprint/pkg/blueprint"
 	"github.com/osbuild/images/pkg/datasizes"
 	"github.com/osbuild/images/pkg/disk"
 )

@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/osbuild/images/pkg/arch"
-	"github.com/osbuild/images/pkg/blueprint"
+	"github.com/osbuild/blueprint/pkg/blueprint"
 	"github.com/osbuild/images/pkg/datasizes"
 	"github.com/osbuild/images/pkg/platform"
 )
