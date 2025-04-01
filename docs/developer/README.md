@@ -15,6 +15,25 @@ The full list of dependencies is:
 - `osbuild-ostree`
 - `osbuild-selinux`
 
+## Commits
+
+See [the developer guide on osbuild.org](https://osbuild.org/docs/developer-guide/general/workflow/) for general guidelines.
+
+Guidelines specific to this repository:
+- Each commit should ideally compile successfully.
+- If possible, unit tests should pass on each commit as well, however readability and clean patches are preferred, so this is not a strict requirement.
+- The [manifest checksum](/test/data/manifest-checksums.txt) file must be valid for every commit. Use the [tools/gen-manifest-checksums.sh](/tools/gen-manifest-checksums.sh) script to generate the file if needed.
+- The 
+
+## Tests
+
+Unit tests can be run using the standard `go test` command:
+```
+go test ./...
+```
+
+Integration tests run on GitLab using dynamic pipelines. See [the test README](/test/README.md) for full description.
+
 ## Topics
 
 - [Useful cmds](./cmds.md) for development and testing.
