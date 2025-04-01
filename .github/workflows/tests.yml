@@ -243,3 +243,40 @@ jobs:
         run: |
           python3 -m pylint --version
           python3 -m pylint $(grep -l "/usr/bin/env python3" -r test/scripts) test/scripts/*.py
+
+  manifest-checksums:
+    name: "Validate manifest checksums"
+    runs-on: ubuntu-24.04
+    env:
+      # workaround for expired cert at source of indirect dependency
+      # (go.opencensus.io/trace)
+      GOPROXY: "https://proxy.golang.org|direct"
+      # systemd installation pulls in packages that require configuration on
+      # install (tzdata). We intend to remove the systemd dependency
+      # (systemd-escape), but for now we need this.
+      DEBIAN_FRONTEND: "noninteractive"
+
+    steps:
+      - name: Set up Go 1.22
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          # we need the history of the branch and main
+          fetch-depth: 0
+
+      - name: apt update
+        run: sudo apt update
+
+      - name: Install libgpgme devel package
+        run: sudo apt install -y libgpgme-dev libbtrfs-dev libdevmapper-dev systemd git
+
+      # Run the manifest checksum generator on each commit on the branch.
+      # If it changes, it will interrupt the rebase and exit with non-zero.
+      - name: Validate manifest checksums for every commit in the PR
+        run: git rebase origin/main --exec ./tools/gen-manifest-checksums.sh
