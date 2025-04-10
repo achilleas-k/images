@@ -87,10 +87,14 @@ func (target *Target) UnmarshalJSON(data []byte) error {
 		options = new(VMWareTargetOptions)
 	case TargetNameOCI:
 		options = new(OCITargetOptions)
+	case TargetNameOCIObjectStorage:
+		options = new(OCIObjectStorageTargetOptions)
 	case TargetNameContainer:
 		options = new(ContainerTargetOptions)
 	case TargetNameWorkerServer:
 		options = new(WorkerServerTargetOptions)
+	case TargetNamePulpOSTree:
+		options = new(PulpOSTreeTargetOptions)
 	default:
 		return fmt.Errorf("unexpected target name: %s", rawTarget.Name)
 	}
@@ -246,6 +250,18 @@ func (target Target) MarshalJSON() ([]byte, error) {
 			}
 			rawOptions, err = json.Marshal(compat)
 
+		case *OCIObjectStorageTargetOptions:
+			type compatOptionsType struct {
+				*OCIObjectStorageTargetOptions
+				// Deprecated: `Filename` is now set in the target itself as `ExportFilename`, not in its options.
+				Filename string `json:"filename"`
+			}
+			compat := compatOptionsType{
+				OCIObjectStorageTargetOptions: t,
+				Filename:                      target.OsbuildArtifact.ExportFilename,
+			}
+			rawOptions, err = json.Marshal(compat)
+
 		case *ContainerTargetOptions:
 			type compatOptionsType struct {
 				*ContainerTargetOptions
@@ -262,6 +278,10 @@ func (target Target) MarshalJSON() ([]byte, error) {
 			// WorkerServer target does not handle the backward compatibility
 			// for the Filename in target options, because it was added after
 			// the incompatible change.
+			rawOptions, err = json.Marshal(target.Options)
+
+		case *PulpOSTreeTargetOptions:
+			// added after incompatibility change
 			rawOptions, err = json.Marshal(target.Options)
 
 		default:
