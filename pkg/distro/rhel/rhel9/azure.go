@@ -634,9 +634,9 @@ func azureCVMImageConfig(rd *rhel.Distribution) *distro.ImageConfig {
 							ApplyNetworkConfig: false,
 						},
 					},
-					DatasourceList: []string{
-						"Azure",
-					},
+					// DatasourceList: []string{
+					// 	"Azure",
+					// },
 				},
 			},
 		},

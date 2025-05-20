@@ -72,6 +72,11 @@
   ],
   "x86_64": [
     {
+      "name": "virt-firmware",
+      "baseurl": "http://localhost:8080/",
+      "check_gpg": false
+    },
+    {
       "name": "baseos",
       "baseurl": "https://rpmrepo.osbuild.org/v2/mirror/rhvpn/el10/el10-x86_64-baseos-n10.0-20250428",
       "check_gpg": true,
