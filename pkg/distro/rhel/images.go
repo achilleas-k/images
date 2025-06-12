@@ -880,3 +880,43 @@ func makeOSTreePayloadCommit(options *ostree.ImageOptions, defaultRef string) (o
 		RHSM: options.RHSM,
 	}, nil
 }
+
+func ociGuestImage(workload workload.Workload,
+	t *ImageType,
+	customizations *blueprint.Customizations,
+	options distro.ImageOptions,
+	packageSets map[string]rpmmd.PackageSet,
+	rng *rand.Rand) (image.ImageKind, error) {
+
+	img := image.NewDiskImage()
+	img.Platform = t.platform
+
+	var err error
+	img.OSCustomizations, err = osCustomizations(t, packageSets[OSPkgsKey], options, nil, customizations)
+	if err != nil {
+		return nil, err
+	}
+
+	img.Environment = t.Environment
+	img.Workload = workload
+	img.Compression = t.Compression
+	pt, err := t.GetPartitionTable(customizations, options, rng)
+	if err != nil {
+		return nil, err
+	}
+	img.PartitionTable = pt
+
+	img.Filename = t.Filename()
+
+	if img.OSCustomizations.NoBLS {
+		img.OSProduct = t.Arch().Distro().Product()
+		img.OSVersion = t.Arch().Distro().OsVersion()
+		img.OSNick = t.Arch().Distro().Codename()
+	}
+
+	if t.DiskImagePartTool != nil {
+		img.PartTool = *t.DiskImagePartTool
+	}
+
+	return img, nil
+}

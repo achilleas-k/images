@@ -13,7 +13,7 @@ type OCIContainer struct {
 	Cmd          []string
 	ExposedPorts []string
 
-	treePipeline TreePipeline
+	sourcePipeline Pipeline
 }
 
 func (p OCIContainer) Filename() string {
@@ -24,11 +24,11 @@ func (p *OCIContainer) SetFilename(filename string) {
 	p.filename = filename
 }
 
-func NewOCIContainer(buildPipeline Build, treePipeline TreePipeline) *OCIContainer {
+func NewOCIContainer(buildPipeline Build, pipeline Pipeline) *OCIContainer {
 	p := &OCIContainer{
-		Base:         NewBase("container", buildPipeline),
-		treePipeline: treePipeline,
-		filename:     "oci-archive.tar",
+		Base:           NewBase("container", buildPipeline),
+		sourcePipeline: pipeline,
+		filename:       "oci-archive.tar",
 	}
 	buildPipeline.addDependent(p)
 	return p
@@ -38,14 +38,14 @@ func (p *OCIContainer) serialize() osbuild.Pipeline {
 	pipeline := p.Base.serialize()
 
 	options := &osbuild.OCIArchiveStageOptions{
-		Architecture: p.treePipeline.Platform().GetArch().String(),
+		Architecture: p.sourcePipeline.Platform().GetArch().String(),
 		Filename:     p.Filename(),
 		Config: &osbuild.OCIArchiveConfig{
 			Cmd:          p.Cmd,
 			ExposedPorts: p.ExposedPorts,
 		},
 	}
-	baseInput := osbuild.NewTreeInput("name:" + p.treePipeline.Name())
+	baseInput := osbuild.NewTreeInput("name:" + p.sourcePipeline.Name())
 	inputs := &osbuild.OCIArchiveStageInputs{Base: baseInput}
 	pipeline.AddStage(osbuild.NewOCIArchiveStage(options, inputs))
 

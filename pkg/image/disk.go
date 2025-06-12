@@ -41,6 +41,10 @@ type DiskImage struct {
 	InstallWeakDeps *bool
 }
 
+type DiskImageContainer struct {
+	DiskImage
+}
+
 func NewDiskImage() *DiskImage {
 	return &DiskImage{
 		Base:     NewBase("disk"),
@@ -139,4 +143,44 @@ func (img *DiskImage) InstantiateManifest(m *manifest.Manifest,
 		// panic on unknown strings
 		panic(fmt.Sprintf("unsupported compression type %q", img.Compression))
 	}
+}
+
+func NewDiskImageContainer() *DiskImageContainer {
+	return &DiskImageContainer{
+		DiskImage: DiskImage{
+			Base:     NewBase("disk"),
+			PartTool: osbuild.PTSfdisk,
+		},
+	}
+}
+
+func (img *DiskImageContainer) InstantiateManifest(m *manifest.Manifest,
+	repos []rpmmd.RepoConfig,
+	runner runner.Runner,
+	rng *rand.Rand) (*artifact.Artifact, error) {
+
+	buildPipeline := addBuildBootstrapPipelines(m, runner, repos, nil)
+	buildPipeline.Checkpoint()
+
+	osPipeline := manifest.NewOS(buildPipeline, img.Platform, repos)
+	osPipeline.PartitionTable = img.PartitionTable
+	osPipeline.OSCustomizations = img.OSCustomizations
+	osPipeline.Environment = img.Environment
+	osPipeline.Workload = img.Workload
+	osPipeline.OSProduct = img.OSProduct
+	osPipeline.OSVersion = img.OSVersion
+	osPipeline.OSNick = img.OSNick
+
+	if img.InstallWeakDeps != nil {
+		osPipeline.OSCustomizations.InstallWeakDeps = *img.InstallWeakDeps
+	}
+
+	rawImagePipeline := manifest.NewRawImage(buildPipeline, osPipeline)
+	rawImagePipeline.PartTool = img.PartTool
+
+	qcow2Pipeline := manifest.NewQCOW2(buildPipeline, rawImagePipeline)
+	qcow2Pipeline.Compat = img.Platform.GetQCOW2Compat()
+
+	container := manifest.NewOCIContainer(buildPipeline, qcow2Pipeline)
+	return container.Export()
 }

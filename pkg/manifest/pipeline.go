@@ -30,6 +30,8 @@ type Pipeline interface {
 	// Manifest returns a reference to the Manifest which this Pipeline belongs to.
 	Manifest() *Manifest
 
+	Platform() platform.Platform
+
 	setManifest(*Manifest)
 
 	getCheckpoint() bool
@@ -112,6 +114,10 @@ func (p Base) Manifest() *Manifest {
 	return p.manifest
 }
 
+func (p Base) Platform() platform.Platform {
+	return nil
+}
+
 func (p *Base) setManifest(m *Manifest) {
 	p.manifest = m
 }
@@ -192,7 +198,6 @@ type TreePipeline interface {
 	Name() string
 	Manifest() *Manifest
 	BuildPipeline() Build
-	Platform() platform.Platform
 }
 
 // FilePipeline is any pipeline that produces a single file (typically an image file).
