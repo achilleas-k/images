@@ -7,12 +7,13 @@ import (
 	"strings"
 
 	"github.com/osbuild/images/pkg/distro"
+	"github.com/osbuild/images/pkg/imageconfig"
 	"github.com/osbuild/images/pkg/runner"
 )
 
 // DefaultDistroImageConfigFunc is a function that returns the default image
 // configuration for a distribution.
-type DefaultDistroImageConfigFunc func(d *Distribution) *distro.ImageConfig
+type DefaultDistroImageConfigFunc func(d *Distribution) *imageconfig.ImageConfig
 
 type Distribution struct {
 	name               string
@@ -105,7 +106,7 @@ func (d *Distribution) IsAlmaLinuxKitten() bool {
 	return strings.HasPrefix(d.name, "almalinux_kitten")
 }
 
-func (d *Distribution) GetDefaultImageConfig() *distro.ImageConfig {
+func (d *Distribution) GetDefaultImageConfig() *imageconfig.ImageConfig {
 	if d.DefaultImageConfig == nil {
 		return nil
 	}

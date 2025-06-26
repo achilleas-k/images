@@ -6,8 +6,8 @@ import (
 	"github.com/osbuild/images/pkg/customizations/subscription"
 	"github.com/osbuild/images/pkg/datasizes"
 	"github.com/osbuild/images/pkg/disk"
-	"github.com/osbuild/images/pkg/distro"
 	"github.com/osbuild/images/pkg/distro/rhel"
+	"github.com/osbuild/images/pkg/imageconfig"
 	"github.com/osbuild/images/pkg/osbuild"
 )
 
@@ -37,7 +37,7 @@ func mkAzureRhuiImgType() *rhel.ImageType {
 	return it
 }
 
-var azureDefaultImgConfig = &distro.ImageConfig{
+var azureDefaultImgConfig = &imageconfig.ImageConfig{
 	Timezone: common.ToPtr("Etc/UTC"),
 	Locale:   common.ToPtr("en_US.UTF-8"),
 	GPGKeyFiles: []string{
@@ -49,7 +49,7 @@ var azureDefaultImgConfig = &distro.ImageConfig{
 	UpdateDefaultKernel: common.ToPtr(true),
 	DefaultKernel:       common.ToPtr("kernel-core"),
 
-	Sysconfig: &distro.Sysconfig{
+	Sysconfig: &imageconfig.Sysconfig{
 		Networking: true,
 		NoZeroConf: true,
 	},

@@ -25,6 +25,7 @@ import (
 	"github.com/osbuild/images/pkg/disk"
 	"github.com/osbuild/images/pkg/distro"
 	"github.com/osbuild/images/pkg/experimentalflags"
+	"github.com/osbuild/images/pkg/imageconfig"
 	"github.com/osbuild/images/pkg/olog"
 	"github.com/osbuild/images/pkg/platform"
 	"github.com/osbuild/images/pkg/rpmmd"
@@ -183,7 +184,7 @@ type imageTypesYAML struct {
 }
 
 type distroImageConfig struct {
-	Default    *distro.ImageConfig                     `yaml:"default"`
+	Default    *imageconfig.ImageConfig                `yaml:"default"`
 	Conditions map[string]*distroImageConfigConditions `yaml:"conditions,omitempty"`
 }
 
@@ -219,8 +220,8 @@ func (wc *whenCondition) Eval(id *distro.ID, archStr string) bool {
 }
 
 type distroImageConfigConditions struct {
-	When  whenCondition       `yaml:"when,omitempty"`
-	Merge *distro.ImageConfig `yaml:"merge,omitempty"`
+	When  whenCondition            `yaml:"when,omitempty"`
+	Merge *imageconfig.ImageConfig `yaml:"merge,omitempty"`
 }
 
 // XXX: this should eventually implement the "distro.ImageType"
@@ -287,13 +288,13 @@ func (it *imageType) Name() string {
 }
 
 type imageConfig struct {
-	*distro.ImageConfig `yaml:",inline"`
-	Conditions          map[string]*conditionsImgConf `yaml:"conditions,omitempty"`
+	*imageconfig.ImageConfig `yaml:",inline"`
+	Conditions               map[string]*conditionsImgConf `yaml:"conditions,omitempty"`
 }
 
 type conditionsImgConf struct {
-	When  whenCondition       `yaml:"when,omitempty"`
-	Merge *distro.ImageConfig `yaml:"merge"`
+	When  whenCondition            `yaml:"when,omitempty"`
+	Merge *imageconfig.ImageConfig `yaml:"merge"`
 }
 
 type installerConfig struct {
@@ -349,7 +350,7 @@ func versionStringForVerCmp(u distro.ID) string {
 // DistroImageConfig returns the distro wide ImageConfig.
 //
 // Each ImageType gets this as their default ImageConfig.
-func DistroImageConfig(distroNameVer string) (*distro.ImageConfig, error) {
+func DistroImageConfig(distroNameVer string) (*imageconfig.ImageConfig, error) {
 	toplevel, err := load(distroNameVer)
 	if err != nil {
 		return nil, err
@@ -570,7 +571,7 @@ func load(distroNameVer string) (*imageTypesYAML, error) {
 }
 
 // ImageConfig returns the image type specific ImageConfig
-func ImageConfig(distroNameVer, archName, typeName string) (*distro.ImageConfig, error) {
+func ImageConfig(distroNameVer, archName, typeName string) (*imageconfig.ImageConfig, error) {
 	toplevel, err := load(distroNameVer)
 	if err != nil {
 		return nil, err

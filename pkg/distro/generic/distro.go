@@ -10,6 +10,7 @@ import (
 	"github.com/osbuild/images/internal/common"
 	"github.com/osbuild/images/pkg/distro"
 	"github.com/osbuild/images/pkg/distro/defs"
+	"github.com/osbuild/images/pkg/imageconfig"
 	"github.com/osbuild/images/pkg/platform"
 )
 
@@ -45,7 +46,7 @@ type distribution struct {
 	// accross the centos/alma/rhel distros.yaml, otherwise we
 	// just load it from the imagetypes file/dir and it is natually
 	// "in-sync"
-	defaultImageConfig *distro.ImageConfig
+	defaultImageConfig *imageconfig.ImageConfig
 }
 
 func (d *distribution) getISOLabelFunc(isoLabel string) isoLabelFunc {

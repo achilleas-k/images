@@ -20,6 +20,7 @@ import (
 	"github.com/osbuild/images/pkg/distro/defs"
 	"github.com/osbuild/images/pkg/experimentalflags"
 	"github.com/osbuild/images/pkg/image"
+	"github.com/osbuild/images/pkg/imageconfig"
 	"github.com/osbuild/images/pkg/manifest"
 	"github.com/osbuild/images/pkg/platform"
 	"github.com/osbuild/images/pkg/policies"
@@ -42,7 +43,7 @@ type imageType struct {
 	// XXX: make definable via YAML
 	workload workload.Workload
 	// XXX: make member function ImageTypeYAML
-	defaultImageConfig     *distro.ImageConfig
+	defaultImageConfig     *imageconfig.ImageConfig
 	defaultInstallerConfig *distro.InstallerConfig
 
 	image    imageFunc
@@ -175,11 +176,11 @@ func (t *imageType) getPartitionTable(customizations *blueprint.Customizations, 
 	return disk.NewPartitionTable(basePartitionTable, mountpoints, imageSize, partitioningMode, t.platform.GetArch(), t.ImageTypeYAML.RequiredPartitionSizes, rng)
 }
 
-func (t *imageType) getDefaultImageConfig() *distro.ImageConfig {
+func (t *imageType) getDefaultImageConfig() *imageconfig.ImageConfig {
 	// ensure that image always returns non-nil default config
 	imageConfig := t.defaultImageConfig
 	if imageConfig == nil {
-		imageConfig = &distro.ImageConfig{}
+		imageConfig = &imageconfig.ImageConfig{}
 	}
 	return imageConfig.InheritFrom(t.arch.distro.defaultImageConfig)
 
@@ -276,7 +277,7 @@ func (t *imageType) Manifest(bp *blueprint.Blueprint,
 
 	if experimentalflags.Bool("no-fstab") {
 		if t.defaultImageConfig == nil {
-			t.defaultImageConfig = &distro.ImageConfig{
+			t.defaultImageConfig = &imageconfig.ImageConfig{
 				MountUnits: common.ToPtr(true),
 			}
 		} else {

@@ -20,6 +20,7 @@ import (
 	"github.com/osbuild/images/pkg/distro"
 	"github.com/osbuild/images/pkg/distro/defs"
 	"github.com/osbuild/images/pkg/distro/test_distro"
+	"github.com/osbuild/images/pkg/imageconfig"
 	"github.com/osbuild/images/pkg/platform"
 	"github.com/osbuild/images/pkg/rpmmd"
 	"github.com/osbuild/images/pkg/runner"
@@ -527,7 +528,7 @@ image_config:
 	distroNameVer := fakeDistroName + "-" + fakeDistroVer
 	imgConfig, err := defs.DistroImageConfig(distroNameVer)
 	assert.NoError(t, err)
-	assert.Equal(t, &distro.ImageConfig{
+	assert.Equal(t, &imageconfig.ImageConfig{
 		Locale:   common.ToPtr("C.UTF-8"),
 		Timezone: common.ToPtr("OverrideTZ"),
 		Users:    []users.User{users.User{Name: "testuser"}},
@@ -619,7 +620,7 @@ image_types:
 
 	imgConfig, err := defs.ImageConfig("test-distro-1", "test_arch", "test_type")
 	require.NoError(t, err)
-	assert.Equal(t, &distro.ImageConfig{
+	assert.Equal(t, &imageconfig.ImageConfig{
 		Hostname:      common.ToPtr("test-arch-hn"),
 		Locale:        common.ToPtr("en_US.UTF-8"),
 		Timezone:      common.ToPtr("OverrideTZ"),

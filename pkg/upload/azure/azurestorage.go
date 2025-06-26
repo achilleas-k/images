@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+
 	// azure uses MD5 hashes
 	/* #nosec G501 */
 	"crypto/md5"

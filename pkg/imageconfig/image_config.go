@@ -1,4 +1,6 @@
-package distro
+// Package imageconfig primarily defines the [ImageConfig] struct, which is
+// used to set configuration options that are used to define an image type.
+package imageconfig
 
 import (
 	"fmt"

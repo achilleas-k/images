@@ -16,6 +16,7 @@ import (
 	"github.com/osbuild/images/pkg/distro"
 	"github.com/osbuild/images/pkg/experimentalflags"
 	"github.com/osbuild/images/pkg/image"
+	"github.com/osbuild/images/pkg/imageconfig"
 	"github.com/osbuild/images/pkg/manifest"
 	"github.com/osbuild/images/pkg/osbuild"
 	"github.com/osbuild/images/pkg/platform"
@@ -76,7 +77,7 @@ type ImageType struct {
 	Workload               workload.Workload
 	NameAliases            []string
 	Compression            string // TODO: remove from image definition and make it a transport option
-	DefaultImageConfig     *distro.ImageConfig
+	DefaultImageConfig     *imageconfig.ImageConfig
 	DefaultInstallerConfig *distro.InstallerConfig
 	DefaultSize            uint64
 
@@ -249,11 +250,11 @@ func (t *ImageType) GetPartitionTable(
 	return disk.NewPartitionTable(&basePartitionTable, customizations.GetFilesystems(), imageSize, options.PartitioningMode, t.platform.GetArch(), nil, rng)
 }
 
-func (t *ImageType) getDefaultImageConfig() *distro.ImageConfig {
+func (t *ImageType) getDefaultImageConfig() *imageconfig.ImageConfig {
 	// ensure that image always returns non-nil default config
 	imageConfig := t.DefaultImageConfig
 	if imageConfig == nil {
-		imageConfig = &distro.ImageConfig{}
+		imageConfig = &imageconfig.ImageConfig{}
 	}
 	return imageConfig.InheritFrom(t.arch.distro.GetDefaultImageConfig())
 
@@ -371,7 +372,7 @@ func (t *ImageType) Manifest(bp *blueprint.Blueprint,
 
 	if experimentalflags.Bool("no-fstab") {
 		if t.DefaultImageConfig == nil {
-			t.DefaultImageConfig = &distro.ImageConfig{
+			t.DefaultImageConfig = &imageconfig.ImageConfig{
 				MountUnits: common.ToPtr(true),
 			}
 		} else {

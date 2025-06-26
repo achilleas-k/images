@@ -1,4 +1,4 @@
-package distro
+package imageconfig
 
 import (
 	"testing"

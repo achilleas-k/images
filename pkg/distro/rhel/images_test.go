@@ -11,6 +11,7 @@ import (
 	"github.com/osbuild/images/pkg/customizations/subscription"
 	"github.com/osbuild/images/pkg/disk"
 	"github.com/osbuild/images/pkg/distro"
+	"github.com/osbuild/images/pkg/imageconfig"
 	"github.com/osbuild/images/pkg/manifest"
 	"github.com/osbuild/images/pkg/platform"
 	"github.com/osbuild/images/pkg/rpmmd"
@@ -19,7 +20,7 @@ import (
 func TestOsCustomizationsRHSM(t *testing.T) {
 	type testCase struct {
 		name        string
-		ic          *distro.ImageConfig
+		ic          *imageconfig.ImageConfig
 		io          *distro.ImageOptions
 		bpc         *blueprint.Customizations
 		expectedOsc *manifest.OSCustomizations
@@ -28,21 +29,21 @@ func TestOsCustomizationsRHSM(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:        "no rhsm config at all; subscription in the image options",
-			ic:          &distro.ImageConfig{},
+			ic:          &imageconfig.ImageConfig{},
 			io:          &distro.ImageOptions{Subscription: &subscription.ImageOptions{}},
 			bpc:         &blueprint.Customizations{},
 			expectedOsc: &manifest.OSCustomizations{},
 		},
 		{
 			name:        "no rhsm config at all; no subscription in the image options",
-			ic:          &distro.ImageConfig{},
+			ic:          &imageconfig.ImageConfig{},
 			io:          &distro.ImageOptions{},
 			bpc:         &blueprint.Customizations{},
 			expectedOsc: &manifest.OSCustomizations{},
 		},
 		{
 			name: "rhsm config in the image config, no subscription in the image options",
-			ic: &distro.ImageConfig{
+			ic: &imageconfig.ImageConfig{
 				RHSMConfig: map[subscription.RHSMStatus]*subscription.RHSMConfig{
 					subscription.RHSMConfigNoSubscription: {
 						DnfPlugins: subscription.SubManDNFPluginsConfig{
@@ -107,7 +108,7 @@ func TestOsCustomizationsRHSM(t *testing.T) {
 		},
 		{
 			name: "rhsm config in the image config, subscription in the image options",
-			ic: &distro.ImageConfig{
+			ic: &imageconfig.ImageConfig{
 				RHSMConfig: map[subscription.RHSMStatus]*subscription.RHSMConfig{
 					subscription.RHSMConfigNoSubscription: {
 						DnfPlugins: subscription.SubManDNFPluginsConfig{
@@ -172,7 +173,7 @@ func TestOsCustomizationsRHSM(t *testing.T) {
 		},
 		{
 			name: "no rhsm config in the image config, rhsm config in the BP, subscription in the image options",
-			ic:   &distro.ImageConfig{},
+			ic:   &imageconfig.ImageConfig{},
 			io:   &distro.ImageOptions{Subscription: &subscription.ImageOptions{}},
 			bpc: &blueprint.Customizations{
 				RHSM: &blueprint.RHSMCustomization{
@@ -219,7 +220,7 @@ func TestOsCustomizationsRHSM(t *testing.T) {
 		},
 		{
 			name: "no rhsm config in the image config, rhsm config in the BP, no subscription in the image options",
-			ic:   &distro.ImageConfig{},
+			ic:   &imageconfig.ImageConfig{},
 			io:   &distro.ImageOptions{},
 			bpc: &blueprint.Customizations{
 				RHSM: &blueprint.RHSMCustomization{
@@ -266,7 +267,7 @@ func TestOsCustomizationsRHSM(t *testing.T) {
 		},
 		{
 			name: "rhsm config in the image config, rhsm config in the BP, no subscription in the image options",
-			ic: &distro.ImageConfig{
+			ic: &imageconfig.ImageConfig{
 				RHSMConfig: map[subscription.RHSMStatus]*subscription.RHSMConfig{
 					subscription.RHSMConfigNoSubscription: {
 						DnfPlugins: subscription.SubManDNFPluginsConfig{
@@ -346,7 +347,7 @@ func TestOsCustomizationsRHSM(t *testing.T) {
 		},
 		{
 			name: "rhsm config in the image config, rhsm config in the BP, subscription in the image options",
-			ic: &distro.ImageConfig{
+			ic: &imageconfig.ImageConfig{
 				RHSMConfig: map[subscription.RHSMStatus]*subscription.RHSMConfig{
 					subscription.RHSMConfigNoSubscription: {
 						DnfPlugins: subscription.SubManDNFPluginsConfig{

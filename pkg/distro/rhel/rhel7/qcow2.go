@@ -4,8 +4,8 @@ import (
 	"github.com/osbuild/images/internal/common"
 	"github.com/osbuild/images/pkg/customizations/subscription"
 	"github.com/osbuild/images/pkg/datasizes"
-	"github.com/osbuild/images/pkg/distro"
 	"github.com/osbuild/images/pkg/distro/rhel"
+	"github.com/osbuild/images/pkg/imageconfig"
 	"github.com/osbuild/images/pkg/osbuild"
 )
 
@@ -32,12 +32,12 @@ func mkQcow2ImgType() *rhel.ImageType {
 	return it
 }
 
-var qcow2DefaultImgConfig = &distro.ImageConfig{
+var qcow2DefaultImgConfig = &imageconfig.ImageConfig{
 	DefaultTarget:       common.ToPtr("multi-user.target"),
 	SELinuxForceRelabel: common.ToPtr(true),
 	UpdateDefaultKernel: common.ToPtr(true),
 	DefaultKernel:       common.ToPtr("kernel"),
-	Sysconfig: &distro.Sysconfig{
+	Sysconfig: &imageconfig.Sysconfig{
 		Networking:                  true,
 		NoZeroConf:                  true,
 		CreateDefaultNetworkScripts: true,

@@ -8,8 +8,8 @@ import (
 	"github.com/osbuild/images/pkg/customizations/fsnode"
 	"github.com/osbuild/images/pkg/datasizes"
 	"github.com/osbuild/images/pkg/disk"
-	"github.com/osbuild/images/pkg/distro"
 	"github.com/osbuild/images/pkg/distro/rhel"
+	"github.com/osbuild/images/pkg/imageconfig"
 	"github.com/osbuild/images/pkg/osbuild"
 )
 
@@ -38,7 +38,7 @@ func mkEc2ImgTypeX86_64() *rhel.ImageType {
 }
 
 // default EC2 images config (common for all architectures)
-func ec2ImageConfig() *distro.ImageConfig {
+func ec2ImageConfig() *imageconfig.ImageConfig {
 
 	// systemd-firstboot on el7 does not support --keymap option
 	vconsoleFile, err := fsnode.NewFile("/etc/vconsole.conf", nil, nil, nil, []byte("FONT=latarcyrheb-sun16\nKEYMAP=us\n"))
@@ -66,7 +66,7 @@ func ec2ImageConfig() *distro.ImageConfig {
 		panic(err)
 	}
 
-	return &distro.ImageConfig{
+	return &imageconfig.ImageConfig{
 		Timezone: common.ToPtr("UTC"),
 		TimeSynchronization: &osbuild.ChronyStageOptions{
 			Servers: []osbuild.ChronyConfigServer{
@@ -104,7 +104,7 @@ func ec2ImageConfig() *distro.ImageConfig {
 		DefaultTarget:       common.ToPtr("multi-user.target"),
 		UpdateDefaultKernel: common.ToPtr(true),
 		DefaultKernel:       common.ToPtr("kernel"),
-		Sysconfig: &distro.Sysconfig{
+		Sysconfig: &imageconfig.Sysconfig{
 			Networking:                  true,
 			NoZeroConf:                  true,
 			CreateDefaultNetworkScripts: true,

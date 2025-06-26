@@ -10,6 +10,7 @@ import (
 	"github.com/osbuild/images/pkg/distro"
 	"github.com/osbuild/images/pkg/distro/defs"
 	"github.com/osbuild/images/pkg/distro/rhel"
+	"github.com/osbuild/images/pkg/imageconfig"
 	"github.com/osbuild/images/pkg/platform"
 )
 
@@ -56,7 +57,7 @@ func distroISOLabelFunc(t *rhel.ImageType) string {
 	}
 }
 
-func defaultDistroImageConfig(d *rhel.Distribution) *distro.ImageConfig {
+func defaultDistroImageConfig(d *rhel.Distribution) *imageconfig.ImageConfig {
 	return common.Must(defs.DistroImageConfig(d.Name()))
 }
 
