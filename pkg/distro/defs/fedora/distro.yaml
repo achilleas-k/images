@@ -526,6 +526,12 @@ image_types:
     filename: "vagrant-libvirt.box"
     mime_type: "application/x-tar"
     environment: *kvm_env
+    environment_config:
+      enabled_services:
+        - "cloud-init.service"
+        - "cloud-config.service"
+        - "cloud-final.service"
+        - "cloud-init-local.service"
     bootable: true
     default_size: 5_368_709_120  # 5 * datasizes.GibiByte
     image_func: "disk"

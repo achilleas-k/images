@@ -249,11 +249,12 @@ type imageType struct {
 	Config          imageConfig     `yaml:"image_config,omitempty"`
 	InstallerConfig installerConfig `yaml:"installer_config,omitempty"`
 
-	Filename    string                      `yaml:"filename"`
-	MimeType    string                      `yaml:"mime_type"`
-	Compression string                      `yaml:"compression"`
-	Environment environment.EnvironmentConf `yaml:"environment"`
-	Bootable    bool                        `yaml:"bootable"`
+	Filename       string                      `yaml:"filename"`
+	MimeType       string                      `yaml:"mime_type"`
+	Compression    string                      `yaml:"compression"`
+	Environment    environment.EnvironmentConf `yaml:"environment"`
+	EnvImageConfig imageConfig                 `yaml:"environment_config"`
+	Bootable       bool                        `yaml:"bootable"`
 
 	BootISO  bool   `yaml:"boot_iso"`
 	ISOLabel string `yaml:"iso_label"`
@@ -593,6 +594,8 @@ func ImageConfig(distroNameVer, archName, typeName string) (*imageconfig.ImageCo
 			}
 		}
 	}
+
+	imgConfig = imgConfig.InheritFrom(imgType.EnvImageConfig.ImageConfig)
 
 	return imgConfig, nil
 }
