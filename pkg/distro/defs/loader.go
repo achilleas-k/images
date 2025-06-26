@@ -246,7 +246,7 @@ type imageType struct {
 	// override specific aspects of the partition table
 	PartitionTablesOverrides *partitionTablesOverrides `yaml:"partition_tables_override"`
 
-	ImageConfig     imageConfig     `yaml:"image_config,omitempty"`
+	Config          imageConfig     `yaml:"image_config,omitempty"`
 	InstallerConfig installerConfig `yaml:"installer_config,omitempty"`
 
 	Filename    string                      `yaml:"filename"`
@@ -580,14 +580,14 @@ func ImageConfig(distroNameVer, archName, typeName string) (*imageconfig.ImageCo
 	if !ok {
 		return nil, fmt.Errorf("%w: %q", ErrImageTypeNotFound, typeName)
 	}
-	imgConfig := imgType.ImageConfig.ImageConfig
-	if imgType.ImageConfig.Conditions != nil {
+	imgConfig := imgType.Config.ImageConfig
+	if imgType.Config.Conditions != nil {
 		id, err := distro.ParseID(distroNameVer)
 		if err != nil {
 			return nil, err
 		}
 
-		for _, cond := range imgType.ImageConfig.Conditions {
+		for _, cond := range imgType.Config.Conditions {
 			if cond.When.Eval(id, archName) {
 				imgConfig = cond.Merge.InheritFrom(imgConfig)
 			}

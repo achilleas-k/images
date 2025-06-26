@@ -139,6 +139,27 @@ type ImageConfig struct {
 	// IsoRootfsType defines what rootfs (squashfs, erofs,ext4)
 	// is used
 	IsoRootfsType *manifest.RootfsType `yaml:"iso_rootfs_type,omitempty"`
+
+	// Machine architecture for the image.
+	Architecture *string `yaml:"architecture,omitempty"`
+
+	// BIOS defines whether the image should support legacy BIOS boot.
+	BIOS *bool `yaml:"bios,omitempty"`
+
+	// The UEFIVendor string defines the path in the ESP where EFI binaries
+	// will be installed. Setting this option also implies that the image will
+	// support UEFI boot.
+	UEFIVendor *string `yaml:"uefi_vendor,omitempty"`
+
+	// Bootloader to be used by the image. Valid values are grub2, zipl, and uki.
+	Bootloader *string `yaml:"bootloader,omitempty"`
+
+	// BootFiles copies a list of file from the OS tree to the ESP.
+	BootFiles []BootFilePathPair `yaml:"boot_files,omitempty"`
+
+	// ImageFormat specifies the format of the resulting image. Valid values
+	// are raw, iso, qcow2, vmdk, vhd, gce, ova, and vagrant_libvirt.
+	ImageFormat *string `json:"image_format,omitempty"`
 }
 
 type DNFConfig struct {
@@ -263,4 +284,9 @@ func (c *ImageConfig) SysconfigStageOptions() []*osbuild.SysconfigStageOptions {
 		return nil
 	}
 	return []*osbuild.SysconfigStageOptions{opts}
+}
+
+type BootFilePathPair struct {
+	From string `yaml:"from"`
+	To   string `yaml:"to"`
 }
