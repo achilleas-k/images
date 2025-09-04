@@ -343,7 +343,7 @@ func checkOptionsRhel8(t *imageType, bp *blueprint.Blueprint, options distro.Ima
 					diunSet++
 				}
 				if diunSet != 1 {
-					return warnings, fmt.Errorf("%s: one of customizations.fdo.diun_pub_key_hash, customizations.fdo.diun_pub_key_insecure, customizations.fdo.diun_pub_key_root_certs: required when using fdo", errPrefix)
+					return warnings, fmt.Errorf("%s: exactly one of customizations.fdo.diun_pub_key_hash, customizations.fdo.diun_pub_key_insecure, customizations.fdo.diun_pub_key_root_certs: required when using fdo", errPrefix)
 				}
 			}
 
@@ -564,7 +564,7 @@ func checkOptionsFedora(t *imageType, bp *blueprint.Blueprint, options distro.Im
 				diunSet++
 			}
 			if diunSet != 1 {
-				return warnings, fmt.Errorf("%s: one of customizations.fdo.diun_pub_key_hash, customizations.fdo.diun_pub_key_insecure, customizations.fdo.diun_pub_key_root_certs: required when using fdo", errPrefix)
+				return warnings, fmt.Errorf("%s: exactly one of customizations.fdo.diun_pub_key_hash, customizations.fdo.diun_pub_key_insecure, customizations.fdo.diun_pub_key_root_certs: required when using fdo", errPrefix)
 			}
 		}
 
