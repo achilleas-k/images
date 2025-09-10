@@ -23,3 +23,5 @@ func ValidateRequiredConfig(required []string, conf reflect.Value) error {
 	}
 	return nil
 }
+
+var JSONTagFor = jsonTagFor
