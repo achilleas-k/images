@@ -223,7 +223,7 @@ func (c *ImageConfig) DNFConfigOptions(osVersion string) (*osbuild.DNFConfigStag
 	}
 	options.Variables = append(options.Variables, releaseVer)
 
-	return osbuild.NewDNFConfigStageOptions(options.Variables, options.Config), nil
+	return options, nil
 }
 
 type Sysconfig struct {
