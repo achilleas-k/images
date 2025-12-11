@@ -640,3 +640,50 @@ def write_build_info(build_path: str, data: Dict):
     info_file_path = os.path.join(build_path, "info.json")
     with open(info_file_path, "w", encoding="utf-8") as info_fp:
         json.dump(data, info_fp, indent=2)
+
+
+def build_image(distro, arch, image_type, config_path):
+    print(f"👷 Building image {distro}/{image_type} using config {config_path}")
+
+    # print the config for logging
+    with open(config_path, "r", encoding="utf-8") as config_file:
+        config = json.load(config_file)
+        print(json.dumps(config, indent=2))
+        config_name = config["name"]
+
+    runcmd(["go", "build", "-o", "./bin/build", "./cmd/build"])
+
+    cmd = ["sudo", "-E", "./bin/build", "--output", "./build",
+           "--distro", distro, "--type", image_type, "--config", config_path]
+    runcmd_nc(cmd, extra_env=rng_seed_env())
+
+    print("✅ Build finished!!")
+
+    # Build artifacts are owned by root. Make them world accessible.
+    runcmd(["sudo", "chmod", "a+rwX", "-R", "./build"])
+
+    build_dir = os.path.join("build", gen_build_name(distro, arch, image_type, config_name))
+    manifest_path = os.path.join(build_dir, "manifest.json")
+    with open(manifest_path, "r", encoding="utf-8") as manifest_fp:
+        manifest_data = json.load(manifest_fp)
+    manifest_id = get_manifest_id(manifest_data)
+
+    osbuild_ver, _ = runcmd(["osbuild", "--version"])
+
+    distro_version = get_host_distro()
+    osbuild_commit = get_osbuild_commit(distro_version)
+    if osbuild_commit is None:
+        osbuild_commit = "RELEASE"
+
+    build_info = {
+        "distro": distro,
+        "arch": arch,
+        "image-type": image_type,
+        "config": config_name,
+        "manifest-checksum": manifest_id,
+        "osbuild-version": osbuild_ver.decode().strip(),
+        "osbuild-commit": osbuild_commit,
+        "commit": os.environ.get("CI_COMMIT_SHA", "N/A"),
+        "runner-distro": distro_version,
+    }
+    write_build_info(build_dir, build_info)
