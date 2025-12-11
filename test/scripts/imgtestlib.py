@@ -135,7 +135,7 @@ def dl_build_cache(
     """
     s3url = gen_build_info_s3_dir_path(distro, arch, manifest_id, osbuild_ref, runner_distro)
     dl_what = "all files" if include_only is None else "only " + ', '.join(f"'{i}'" for i in include_only)
-    print(f"⬇️ Downloading {dl_what} from {s3url}")
+    print(f"⬇️ Downloading {dl_what} from {s3url} to {destination}")
 
     cmd = [
         "aws", "s3", "sync",
