@@ -60,6 +60,58 @@ def manifest(build_request, tmp_path_factory):
     }
 
 
+@pytest.fixture(scope="session")
+def build_cache(tmp_path_factory):
+    """
+    Pytest fixture that downloads the info.json and bootc-image-builder image ID (bib*) files from the test cache.
+    """
+    build_cache_path = tmp_path_factory.mktemp("cache")
+    testlib.dl_build_info(build_cache_path)
+    return build_cache_path
+
+
+@pytest.fixture(scope="session")
+def cached_image(manifest, build_cache):
+    """
+    Pytest fixture that fetches an image from the cache based on the manifest. Returns the same data as the manifest
+    fixture with an extra key, "image-path", which contains the path to the image that was downloaded.
+
+    If the image is not available in the cache, the "image-path" is None.
+    """
+    build_request = manifest["build-request"]
+    distro = build_request["distro"]
+    arch = build_request["arch"]
+    manifest_id = manifest["manifest-id"]
+
+    cached_element_dir = build_cache / testlib.gen_build_info_dir_path_prefix(distro, arch, manifest_id)
+    build_info_path = cached_element_dir / "info.json"
+    if not build_info_path.exists():
+        print(f"Cached image for {manifest_id} not found.")
+        manifest["image-path"] = None
+        return manifest
+
+    with build_info_path.open(encoding="utf-8") as build_info_fp:
+        build_info = json.load(build_info_fp)
+
+    commit = build_info["commit"]
+    pr = build_info.get("pr")
+    url = f"https://github.com/osbuild/images/commit/{commit}"
+    print(f"🖼️ Manifest {manifest_id} was successfully built in commit {commit}\n  {url}")
+    if "gh-readonly-queue" in pr:
+        print(f"  This commit was on a merge queue: {pr}")
+    elif pr:
+        print(f"  PR-{pr}: https://github.com/osbuild/images/pull/{pr}")
+    else:
+        print("  No PR/branch info available")
+
+    build_info_dir = build_cache / distro / arch / f"manifest-id-{manifest_id}"
+
+    # download the corresponding image
+    testlib.dl_build_cache(build_cache, distro, arch, manifest_id)
+    manifest["image-path"] = build_info_dir
+    return manifest
+
+
 def pytest_configure(config):
     config.addinivalue_line(
         "markers", "images_integration"
