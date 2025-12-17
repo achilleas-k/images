@@ -723,3 +723,21 @@ def gen_build_requests():
     # Make the build_request order stable
     # This works around limitations of pytest-xdist, which requires parameter sets to be identical between workers
     return sorted(params, key=lambda item: item.id)
+
+
+def gen_manifest(build_request, outputdir):
+    config_name = build_request["config"]["name"]
+    config_path = f"test/configs/{config_name}.json"
+    cmd = ["go", "run", "./cmd/gen-manifests",
+           "--distros", build_request["distro"],
+           "--arches", build_request["arch"],
+           "--types", build_request["image-type"],
+           "--packages=True", "--commits=False", "--containers=True", "--metadata=False",
+           "--cache", os.path.join(TEST_CACHE_ROOT, "rpmmd"),
+           "--output", str(outputdir),
+           "--config", config_path]
+    env = rng_seed_env()
+    env["GOPROXY"] = "https://proxy.golang.org,direct"
+    print("⌨️" + " ".join(cmd) + " ENV: " + str(env))
+    _, stderr = runcmd(cmd, extra_env=env)
+    return stderr
