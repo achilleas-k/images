@@ -1,26 +1,28 @@
-import imgtestlib as testlib
+import pytest
 
 
-def test_builds(distro, arch, imgtype, tmp_path):
-    """
-    Build all the manifests generated using the config-list for the specified distro and arch.
-    The distro, arch, and imgtype arguments are set using command line args when calling pytest (see conftest.py).
-    """
-    manifests_path = tmp_path / "manifests"
+def test_build_request(build_request):
+    assert build_request
+    print("Build request ok!!")
 
-    testlib.gen_manifests(str(manifests_path), distros=[distro], arches=[arch], images=[imgtype])
-    manifests = testlib.read_manifests(str(manifests_path))
 
-    # let's go looking for them manifests
-    build_requests = testlib.filter_builds(manifests, distro=distro, arch=arch)
-    if not build_requests:
-        print("No images to build.")
-        return
+def test_manifest(manifest):
+    manifest = manifest["manifest"]
+    assert manifest["version"] == "2"
+    assert "sources" in manifest
+    assert "pipelines" in manifest
+    assert manifest["pipelines"][0]["name"] == "build"
 
-    print(f"Will build {len(build_requests)} image{"s" if len(build_requests) > 1 else ""}")
-    for n, item in enumerate(build_requests, start=1):
-        distro = item["distro"]
-        arch = item["arch"]
-        image_type = item["image-type"]
-        config_name = item["config"]["name"]
-        print(f"{n}: {distro} {arch} {image_type} {config_name}")
+
+def test_build(image):
+    image_path = image["image-path"]
+    assert image_path
+
+
+def test_boot(image):
+    image_path = image["image-path"]
+    assert image_path
+
+    request = image["build-request"]
+    imgtype = request["image-type"]
+    pytest.skip(f"{imgtype} boot test not supported")
