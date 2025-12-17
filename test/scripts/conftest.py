@@ -1,8 +1,29 @@
-import tempfile
+import json
 
 import pytest
 
 import imgtestlib as testlib
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--persistent-cache-root",
+        type=str,
+        help=("store any generated data in the given path and persist after the tests are finished, "
+              "instead of using tmpdirs and deleting them - this includes: rpmmd cache, build cache, osbuild store"),
+    )
+    parser.addoption(
+        "--dry-run",
+        action="store_true",
+        default=False,
+        help="don't build or boot any images, only print which ones would be tested (based on cache availability)",
+    )
+    parser.addoption(
+        "--force-build",
+        action="store_true",
+        default=False,
+        help="build matching images without checking the cache",
+    )
 
 
 def name_from_build_request(request):
