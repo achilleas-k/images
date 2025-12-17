@@ -133,6 +133,7 @@ def cached_image(manifest, build_cache):
     return manifest
 
 
+# TODO: require root or passwordless sudo
 @pytest.fixture(scope="session")
 def image(cached_image, tmp_path_factory):
     """

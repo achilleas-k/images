@@ -377,8 +377,12 @@ def check_for_build(manifest_fname, build_info_dir, errors):
 
 def filter_builds(manifests, distro=None, arch=None, skip_ostree_pull=True):
     """
-    Returns a list of build requests for the manifests that have no matching config in the test build cache.
+    Returns a list of build requests for the manifests that have no matching config in the test build cache (in the
+    same format as build_requests()).
     """
+    # TODO: instead of filtering, return every build request annotated with extra metadata indicating whether an image
+    # was found or not and whether the image was boot tested, and if it *can* be boot tested. The caller can then decide
+    # what to do.
     print(f"⚙️ Filtering {len(manifests)} build configurations")
     dl_root_path = os.path.join(TEST_CACHE_ROOT, "s3configs", "builds")
     dl_path = os.path.join(dl_root_path, gen_build_info_dir_path_prefix(distro, arch))
