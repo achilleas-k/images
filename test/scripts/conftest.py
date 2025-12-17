@@ -162,7 +162,8 @@ def image(cached_image, tmp_path_factory):
     arch = build_request["arch"]
     imgtype = build_request["image-type"]
     testlib.build_image(distro, arch, imgtype, config_path, build_dir)
-    image_file = testlib.find_image_file(new_image["image-path"])
+    # TODO: move the image to its place in the cache and upload it along with its manifest and build-info
+    image_file = testlib.find_image_file(build_dir)
     new_image["image-path"] = image_file
 
     return new_image
