@@ -146,7 +146,7 @@ def image(cached_image, tmp_path_factory):
         print("Cached image found: skipping build")
         return cached_image
 
-    config_path = tmp_path_factory.mktemp("config") / "config.json"
+    # config_path = tmp_path_factory.mktemp("config") / "config.json"
     build_dir = tmp_path_factory.mktemp("image")
 
     # we want to reuse the metadata from cached_image, but let's rename it to 'new_image' for readability
@@ -155,13 +155,17 @@ def image(cached_image, tmp_path_factory):
     manifest_id = new_image["manifest-id"]
 
     print(f"Building image image for {manifest_id}.")
-    with config_path.open(mode="w", encoding="utf-8") as config_fp:
-        json.dump(build_request["config"], config_fp)
+    # with config_path.open(mode="w", encoding="utf-8") as config_fp:
+    #     json.dump(build_request["config"], config_fp)
+    # TODO: consider loading the whole config when generating build requests
+    config_name = build_request["config"]["name"]
+    config_path = f"test/configs/{config_name}.json"
 
     distro = build_request["distro"]
     arch = build_request["arch"]
     imgtype = build_request["image-type"]
     testlib.build_image(distro, arch, imgtype, config_path, build_dir)
+    build_dir = build_dir / testlib.gen_build_name(distro, arch, imgtype, config_name)
     # TODO: move the image to its place in the cache and upload it along with its manifest and build-info
     image_file = testlib.find_image_file(build_dir)
     new_image["image-path"] = image_file

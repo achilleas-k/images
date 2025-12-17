@@ -742,6 +742,8 @@ def gen_build_requests():
         distro, arch, image_type, config_name = build_request_line.split(",")
         # add the config name as config.name (nested) to make it compatible with all other instances of the
         # 'build_request' structure
+
+        # TODO: load full configs for convenience
         request = {
             "distro": distro,
             "arch": arch,
