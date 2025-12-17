@@ -136,11 +136,13 @@ def dl_build_cache(destination,
 
     If 'include' is not specified, all files are downloaded. Otherwise, all files will be excluded and the items
     in the 'include' list will be passed as '--include' arguments to the 'aws s3 sync' command.
+
+    The destination tree is always created to replicate the remote. Therefore, the path to an element in the cache is
+    always:
+        {destination}/{osbuild_ref}/{runner_distro}/{distro}/{arch}/manifest-id-{manifest_id}/
     """
     s3url = gen_build_info_s3_dir_path(distro, arch, manifest_id, osbuild_ref, runner_distro)
     dl_what = "all files" if include_only is None else "only " + ', '.join(f"'{i}'" for i in include_only)
-    print(f"⬇️ Downloading {dl_what} from {s3url} to {destination}")
-
     cmd = [
         "aws", "s3", "sync",
         "--no-progress",  # wont show progress but will print file list
@@ -149,8 +151,20 @@ def dl_build_cache(destination,
         cmd.extend(["--exclude=*"])
         for i in include_only:
             cmd.extend([f"--include={i}"])
+
+    # This appends any specified components to the destination path, so that the local clone of the cache tree always
+    # matches the remote. For example, if only the osbuild_ref and runner_distro are specified, the sync command runs:
+    #
+    #   aws s3 sync {remote_root}/{osbuild_ref}/ {local_root}/{osbuild_ref}/
+    #
+    # while if a distro is specified, it runs:
+    #
+    #   aws s3 sync {remote_root}/{osbuild_ref}/{distro}/ {local_root}/{osbuild_ref}/{distro}/
+    destination = os.path.join(destination,
+                               gen_build_info_dir_path_prefix(distro, arch, manifest_id, osbuild_ref, runner_distro))
     cmd.extend([s3url, destination])
 
+    print(f"⬇️ Downloading {dl_what} from {s3url} to {destination}")
     job = sp.run(cmd, capture_output=True, check=False)
     ok = job.returncode == 0
     if not ok:
