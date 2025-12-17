@@ -124,9 +124,13 @@ def list_images(distros=None, arches=None, images=None):
 
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments
-def dl_build_cache(
-        destination, distro: Optional[str]=None, arch: Optional[str]=None, osbuild_ref: Optional[str]=None,
-        runner_distro: Optional[str]=None, manifest_id: Optional[str]=None, include_only: Optional[List[str]]=None):
+def dl_build_cache(destination,
+                   distro: Optional[str] = None,
+                   arch: Optional[str] = None,
+                   osbuild_ref: Optional[str] = None,
+                   runner_distro: Optional[str] = None,
+                   manifest_id: Optional[str] = None,
+                   include_only: Optional[List[str]] = None):
     """
     Downloads image build cache files from the s3 bucket.
 
