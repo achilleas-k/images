@@ -2,10 +2,15 @@ import argparse
 import json
 import os
 import pathlib
+import queue
 import subprocess as sp
 import sys
+import threading
 from glob import glob
+from multiprocessing.pool import ThreadPool
 from typing import Dict, List, Optional
+
+import pytest
 
 TEST_CACHE_ROOT = ".cache/osbuild-images"
 CONFIGS_PATH = "./test/configs"
@@ -265,7 +270,7 @@ def check_config_names():
 
 
 def gen_manifests(outputdir, config_list=None, distros=None, arches=None, images=None,
-                  commits=False, skip_no_config=False):
+                  commits=False, skip_no_config=False, content=True):
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     cmd = ["go", "run", "./cmd/gen-manifests",
            "--cache", os.path.join(TEST_CACHE_ROOT, "rpmmd"),
@@ -283,6 +288,8 @@ def gen_manifests(outputdir, config_list=None, distros=None, arches=None, images
         cmd.append("--commits")
     if skip_no_config:
         cmd.append("--skip-noconfig")
+    if not content:
+        cmd.extend(["--packages=false", "--commits=False", "--containers=False"])
     env = rng_seed_env()
     env["GOPROXY"] = "https://proxy.golang.org,direct"
     print("⌨️" + " ".join(cmd) + " ENV: " + str(env))
@@ -296,17 +303,23 @@ def read_manifests(path):
     and its ID.
     """
     print(f"📖 Reading manifests in {path}")
-    manifests = {}
-    for manifest_fname in os.listdir(path):
+    manifest_fnames = os.listdir(path)
+
+    def process_file(manifest_fname):
         manifest_path = os.path.join(path, manifest_fname)
         with open(manifest_path, encoding="utf-8") as manifest_file:
             manifest_data = json.load(manifest_file)
-        manifests[manifest_fname] = {
+        return manifest_fname, {
             "data": manifest_data,
             "id": get_manifest_id(manifest_data["manifest"]),
+            "filename": manifest_fname,
         }
+
+    with ThreadPool() as pool:
+        manifest_tuples = pool.map(process_file, manifest_fnames)
+
     print("✅ Done")
-    return manifests
+    return dict(manifest_tuples)
 
 
 def check_for_build(manifest_fname, build_info_dir, errors):
@@ -664,7 +677,7 @@ def write_build_info(build_path: str, data: Dict):
         json.dump(data, info_fp, indent=2)
 
 
-def build_image(distro, arch, image_type, config_path):
+def build_image(distro, arch, image_type, config_path, output_dir):
     print(f"👷 Building image {distro}/{image_type} using config {config_path}")
 
     # print the config for logging
@@ -675,16 +688,17 @@ def build_image(distro, arch, image_type, config_path):
 
     runcmd(["go", "build", "-o", "./bin/build", "./cmd/build"])
 
-    cmd = ["sudo", "-E", "./bin/build", "--output", "./build",
+    # TODO: set rpmmd and osbuild store
+    cmd = ["sudo", "-E", "./bin/build", "--output", output_dir, "--checkpoints", "*",
            "--distro", distro, "--type", image_type, "--config", config_path]
     runcmd_nc(cmd, extra_env=rng_seed_env())
 
     print("✅ Build finished!!")
 
     # Build artifacts are owned by root. Make them world accessible.
-    runcmd(["sudo", "chmod", "a+rwX", "-R", "./build"])
+    runcmd(["sudo", "chmod", "a+rwX", "-R", output_dir])
 
-    build_dir = os.path.join("build", gen_build_name(distro, arch, image_type, config_name))
+    build_dir = output_dir / gen_build_name(distro, arch, image_type, config_name)
     manifest_path = os.path.join(build_dir, "manifest.json")
     with open(manifest_path, "r", encoding="utf-8") as manifest_fp:
         manifest_data = json.load(manifest_fp)
