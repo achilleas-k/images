@@ -112,6 +112,40 @@ def cached_image(manifest, build_cache):
     return manifest
 
 
+@pytest.fixture(scope="session")
+def image(cached_image, tmp_path_factory):
+    """
+    Pytest fixture that builds an image from a manifest fixture. Returns the same data as the manifest fixture with an
+    extra key, "image-path", which contains the path to the image.
+
+    If the image is available in the cache (via the cached_image fixture), it will not be rebuilt.
+    """
+    if cached_image["image-path"]:
+        print("Cached image found: skipping build")
+        return cached_image
+
+    config_path = tmp_path_factory.mktemp("config") / "config.json"
+    build_dir = tmp_path_factory.mktemp("image")
+
+    # we want to reuse the metadata from cached_image, but let's rename it to 'new_image' for readability
+    new_image = cached_image
+    build_request = new_image["build-request"]
+    manifest_id = new_image["manifest-id"]
+
+    print(f"Building image image for {manifest_id}.")
+    with config_path.open(mode="w", encoding="utf-8") as config_fp:
+        json.dump(build_request["config"], config_fp)
+
+    distro = build_request["distro"]
+    arch = build_request["arch"]
+    imgtype = build_request["image-type"]
+    testlib.build_image(distro, arch, imgtype, config_path, build_dir)
+    image_file = testlib.find_image_file(new_image["image-path"])
+    new_image["image-path"] = image_file
+
+    return new_image
+
+
 def pytest_configure(config):
     config.addinivalue_line(
         "markers", "images_integration"
