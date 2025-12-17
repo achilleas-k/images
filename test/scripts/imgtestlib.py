@@ -687,3 +687,39 @@ def build_image(distro, arch, image_type, config_path):
         "runner-distro": distro_version,
     }
     write_build_info(build_dir, build_info)
+
+
+def gen_build_requests():
+    """
+    Generate all build requests for x86_64 and aarch64 (the architectures we build test in CI) and return them as pytest
+    params. These are used to parameterize the top-level fixture (build_request) which all other fixtures depend on, and
+    creates one test case for each test build. Each case is named by the four components we use when generating
+    manifests and images (distro, arch, image type, config name) and allows for test selection using pytest's standard
+    filtering.
+    """
+    arches = ["x86_64", "aarch64"]
+    params = []
+    cmd = ["go", "run", "-buildvcs=false", "./cmd/gen-manifests", "--arches", ",".join(arches), "--dry-run"]
+    print("⌨️" + " ".join(cmd))
+    stdout, _ = runcmd(cmd)
+    for build_request_line in stdout.decode().strip().split("\n"):
+        distro, arch, image_type, config_name = build_request_line.split(",")
+        # add the config name as config.name (nested) to make it compatible with all other instances of the
+        # 'build_request' structure
+        request = {
+            "distro": distro,
+            "arch": arch,
+            "image-type": image_type,
+            "config": {
+                "name": config_name,
+            },
+        }
+        # Use the full line as the id for each build request. This makes it possible to select or filter tests based on
+        # the parameters. We wont use the gen_build_name() function from imgtestlib however, because that replaces
+        # dashes with underscore in components (distro and image type name), which would require, for example, using
+        # fedora_43 instead of fedora-43 when selecting tests with pytest.
+        params.append(pytest.param(request, id=build_request_line))
+
+    # Make the build_request order stable
+    # This works around limitations of pytest-xdist, which requires parameter sets to be identical between workers
+    return sorted(params, key=lambda item: item.id)
