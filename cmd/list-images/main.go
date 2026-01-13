@@ -89,7 +89,7 @@ func main() {
 	for _, distroName := range distros {
 		distribution := distroFac.GetDistro(distroName)
 		if distribution == nil {
-			fmt.Fprintf(os.Stderr, "WARNING: invalid distro name %q", distroName)
+			fmt.Fprintf(os.Stderr, "WARNING: invalid distro name %q\n", distroName)
 			continue
 		}
 
