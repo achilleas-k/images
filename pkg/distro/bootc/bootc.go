@@ -12,7 +12,6 @@ import (
 	"github.com/osbuild/blueprint/pkg/blueprint"
 
 	"github.com/osbuild/images/internal/cmdutil"
-	"github.com/osbuild/images/internal/common"
 	"github.com/osbuild/images/pkg/arch"
 	bibcontainer "github.com/osbuild/images/pkg/bib/container"
 	"github.com/osbuild/images/pkg/bib/osinfo"
@@ -754,12 +753,26 @@ func newBootcDistroAfterIntrospect(archStr string, info *osinfo.Info, imgref, de
 // anything but tests.
 var NewBootcDistroForTesting = newBootcDistroAfterIntrospect
 
+var (
+	ErrDistroNotFound = errors.New("distribution not found")
+)
+
+func newDistro(idStr string) (*BootcDistro, error) {
+	id, err := distro.ParseID(idStr)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("Parsed %s to %q\n", idStr, id.Name)
+	return &BootcDistro{id: *id}, nil
+}
+
 func DistroFactory(idStr string) distro.Distro {
-	l := strings.SplitN(idStr, ":", 2)
-	if l[0] != "bootc" {
+	distro, err := newDistro(idStr)
+	if errors.Is(err, ErrDistroNotFound) {
 		return nil
 	}
-	imgRef := l[1]
-
-	return common.Must(NewBootcDistro(imgRef, nil))
+	if err != nil {
+		panic(fmt.Errorf("%w with distro %s", err, idStr))
+	}
+	return distro
 }

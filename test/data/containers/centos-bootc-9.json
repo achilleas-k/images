@@ -1,0 +1,6 @@
+{
+  "x86_64": "quay.io/centos-bootc/centos-bootc@sha256:e68e7a39963dfbe67db48dfaec7cd9416505a21ced97fd63a09c3798a3b21297",
+  "aarch64": "quay.io/centos-bootc/centos-bootc@sha256:4c15173bdd851859a032510c5669f2a6fbfdb889d426336de2254b0cfbda72ce",
+  "ppc64le": "quay.io/centos-bootc/centos-bootc@sha256:c47f207ad0d22a8ebc96d83c4da118066df0dc56c01b071f42ce25fc39bf5b67",
+  "s390x": "quay.io/centos-bootc/centos-bootc@sha256:1e1a7af05a2fafdb417c69dec99aeedaaf6872052bf6d81c2fef3f9e96d2daf3"
+}
