@@ -31,7 +31,7 @@ func (f *Factory) getDistro(name string) distro.Distro {
 	for _, f := range f.factories {
 		if d := f(name); d != nil {
 			if match != nil {
-				panic(fmt.Sprintf("distro ID was matched by multiple distro factories: %v, %v", match, d))
+				panic(fmt.Sprintf("distro ID was matched by multiple distro factories: %v, %v", match.Name(), d.Name()))
 			}
 			match = d
 		}
