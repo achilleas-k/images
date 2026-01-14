@@ -312,7 +312,7 @@ func (t *BootcImageType) RequiredBlueprintOptions() []string {
 }
 
 // keep in sync with "generic/imagetype.go:checkOptions()"
-func (t *BootcImageType) checkOptions(bp *blueprint.Blueprint, options distro.ImageOptions) []string {
+func (t *BootcImageType) checkOptions(bp *blueprint.Blueprint) []string {
 	if bp == nil {
 		return nil
 	}
@@ -328,13 +328,13 @@ func (t *BootcImageType) checkOptions(bp *blueprint.Blueprint, options distro.Im
 }
 
 func (t *BootcImageType) Manifest(bp *blueprint.Blueprint, options distro.ImageOptions, repos []rpmmd.RepoConfig, seedp *int64) (*manifest.Manifest, []string, error) {
-	validationWarnings := t.checkOptions(bp, options)
+	validationWarnings := t.checkOptions(bp)
 
-	mani, manifestWarnings, err := t.manifestWithoutValidation(bp, options, repos, seedp)
+	mani, manifestWarnings, err := t.manifestWithoutValidation(bp, options)
 	return mani, append(validationWarnings, manifestWarnings...), err
 }
 
-func (t *BootcImageType) manifestWithoutValidation(bp *blueprint.Blueprint, options distro.ImageOptions, repos []rpmmd.RepoConfig, seedp *int64) (*manifest.Manifest, []string, error) {
+func (t *BootcImageType) manifestWithoutValidation(bp *blueprint.Blueprint, options distro.ImageOptions) (*manifest.Manifest, []string, error) {
 	seed, err := cmdutil.SeedArgFor(nil, t.arch.Name(), t.arch.distro.Name())
 	if err != nil {
 		return nil, nil, err
@@ -344,18 +344,18 @@ func (t *BootcImageType) manifestWithoutValidation(bp *blueprint.Blueprint, opti
 
 	switch t.Image {
 	case "bootc_legacy_iso":
-		return t.manifestForLegacyISO(bp, options, repos, rng)
+		return t.manifestForLegacyISO(bp, rng)
 	case "bootc_iso":
-		return t.manifestForISO(bp, options, repos, rng)
+		return t.manifestForISO(bp, options, rng)
 	case "bootc_disk":
-		return t.manifestForDisk(bp, options, repos, rng)
+		return t.manifestForDisk(bp, options, rng)
 	default:
 		err := fmt.Errorf("unknown image func: %v for %v", t.Image, t.Name())
 		panic(err)
 	}
 }
 
-func (t *BootcImageType) manifestForDisk(bp *blueprint.Blueprint, options distro.ImageOptions, repos []rpmmd.RepoConfig, rng *rand.Rand) (*manifest.Manifest, []string, error) {
+func (t *BootcImageType) manifestForDisk(bp *blueprint.Blueprint, options distro.ImageOptions, rng *rand.Rand) (*manifest.Manifest, []string, error) {
 	if t.arch.distro.imgref == "" {
 		return nil, nil, fmt.Errorf("internal error: no base image defined")
 	}
@@ -498,7 +498,7 @@ func (t *BootcImageType) initAnacondaInstallerBaseFromSourceInfo(img *image.Anac
 	return nil
 }
 
-func (t *BootcImageType) manifestForISO(bp *blueprint.Blueprint, options distro.ImageOptions, repos []rpmmd.RepoConfig, rng *rand.Rand) (*manifest.Manifest, []string, error) {
+func (t *BootcImageType) manifestForISO(bp *blueprint.Blueprint, options distro.ImageOptions, rng *rand.Rand) (*manifest.Manifest, []string, error) {
 	if t.arch.distro.imgref == "" {
 		return nil, nil, fmt.Errorf("internal error in bootc iso: no base image defined")
 	}
@@ -635,7 +635,7 @@ func newDistroYAMLFrom(sourceInfo *osinfo.Info) (*defs.DistroYAML, *distro.ID, e
 	return nil, nil, fmt.Errorf("cannot load distro definitions for %s-%s or any of %v", sourceInfo.OSRelease.ID, sourceInfo.OSRelease.VersionID, sourceInfo.OSRelease.IDLike)
 }
 
-func (t *BootcImageType) manifestForLegacyISO(bp *blueprint.Blueprint, options distro.ImageOptions, repos []rpmmd.RepoConfig, rng *rand.Rand) (*manifest.Manifest, []string, error) {
+func (t *BootcImageType) manifestForLegacyISO(bp *blueprint.Blueprint, rng *rand.Rand) (*manifest.Manifest, []string, error) {
 	if t.arch.distro.imgref == "" {
 		return nil, nil, fmt.Errorf("internal error in bootc legacy iso: no base image defined")
 	}
