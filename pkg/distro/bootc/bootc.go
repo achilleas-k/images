@@ -577,6 +577,23 @@ type DistroOptions struct {
 func NewBootcDistro(name string, opts *DistroOptions) (*BootcDistro, error) {
 	bd := &BootcDistro{
 		name: name,
+		// imgref:      "",
+		// buildImgref: "",
+		sourceInfo: &osinfo.Info{
+			OSRelease: osinfo.OSRelease{
+				PlatformID: "platform:el9",
+				ID:         "centos",
+				VersionID:  "9",
+				Name:       "bootc:centos-9",
+			},
+			UEFIVendor: "redhat",
+		},
+		id: distro.ID{
+			Name:         "bootc:centos",
+			MajorVersion: 9,
+			MinorVersion: -1,
+		},
+		defaultFs: "ext4",
 	}
 
 	// NOTE: use bootc-generic-1 so that the distro loader detects it as
@@ -599,7 +616,7 @@ func NewBootcDistro(name string, opts *DistroOptions) (*BootcDistro, error) {
 	// TODO: add the list of supported architectures to each image type, since
 	// not all architectures make sense for all types (e.g. AMIs should only be
 	// x86_64 and aarch64)
-	for _, a := range []arch.Arch{arch.ARCH_X86_64, arch.ARCH_AARCH64, arch.ARCH_PPC64LE, arch.ARCH_S390X} {
+	for _, a := range []arch.Arch{arch.ARCH_X86_64, arch.ARCH_AARCH64} {
 		ba := &BootcArch{
 			arch: a,
 		}
