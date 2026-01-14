@@ -59,6 +59,11 @@ type BootcArch struct {
 	imageTypes map[string]distro.ImageType
 }
 
+func (d *BootcDistro) SetContainerRef(imgref string) {
+	d.imgref = imgref
+	d.buildImgref = imgref
+}
+
 func (d *BootcDistro) SetBuildContainer(imgref string) (err error) {
 	if imgref == "" {
 		return nil
@@ -621,9 +626,17 @@ func NewBootcDistro(name string, opts *DistroOptions) (*BootcDistro, error) {
 			arch: a,
 		}
 		for _, imgTypeYaml := range distroYAML.ImageTypes() {
-			ba.addImageTypes(BootcImageType{
-				ImageTypeYAML: imgTypeYaml,
-			})
+			// TODO: temporary until I figure out payload
+			switch imgTypeYaml.Name() {
+			case "anaconda-iso":
+				continue
+			case "bootc-installer":
+				continue
+			default:
+				ba.addImageTypes(BootcImageType{
+					ImageTypeYAML: imgTypeYaml,
+				})
+			}
 		}
 		bd.addArches(ba)
 	}
