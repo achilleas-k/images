@@ -11,6 +11,7 @@ import (
 
 	"github.com/gobwas/glob"
 	"github.com/osbuild/images/pkg/distrofactory"
+	testcontainers "github.com/osbuild/images/test/data/containers"
 	testrepos "github.com/osbuild/images/test/data/repositories"
 )
 
@@ -79,8 +80,16 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("failed to create repo registry with tested distros: %v", err))
 	}
+
+	testedContainerRegistry, err := testcontainers.New()
+	if err != nil {
+		panic(fmt.Sprintf("failed to create container registry with tested containers: %v", err))
+	}
+
+	allDistros := append(testedRepoRegistry.ListDistros(), testedContainerRegistry.List()...)
+
 	distroFac := distrofactory.NewDefault()
-	distros, invalidDistros := resolveArgValues(distros, testedRepoRegistry.ListDistros())
+	distros, invalidDistros := resolveArgValues(distros, allDistros)
 	if len(invalidDistros) > 0 {
 		fmt.Fprintf(os.Stderr, "WARNING: invalid distro names: [%s]\n", strings.Join(invalidDistros, ","))
 	}
