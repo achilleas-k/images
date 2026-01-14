@@ -73,6 +73,14 @@
     }
   },
   {
+    "path": "./configs/empty.json",
+    "filters": {
+      "distros": [
+        "*bootc*"
+      ]
+    }
+  },
+  {
     "path": "./configs/edge-ostree-pull-device-fips.json",
     "filters": {
       "distros": [

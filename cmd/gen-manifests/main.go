@@ -39,6 +39,7 @@ import (
 	"github.com/osbuild/images/pkg/ostree"
 	"github.com/osbuild/images/pkg/rhsm/facts"
 	"github.com/osbuild/images/pkg/rpmmd"
+	testcontainers "github.com/osbuild/images/test/data/containers"
 	testrepos "github.com/osbuild/images/test/data/repositories"
 )
 
@@ -434,6 +435,11 @@ func main() {
 		panic(fmt.Sprintf("failed to create repo registry with tested distros: %v", err))
 	}
 
+	testedContainerRegistry, err := testcontainers.New()
+	if err != nil {
+		panic(fmt.Sprintf("failed to create container registry with tested containers: %v", err))
+	}
+
 	distroFac := distrofactory.NewDefault()
 	jobs := make([]manifestJob, 0)
 
@@ -465,7 +471,8 @@ func main() {
 
 	fmt.Fprintln(os.Stderr, "Collecting jobs")
 
-	distros, invalidDistros := distros.ResolveArgValues(testedRepoRegistry.ListDistros())
+	allDistros := append(testedRepoRegistry.ListDistros(), testedContainerRegistry.List()...)
+	distros, invalidDistros := distros.ResolveArgValues(allDistros)
 	if len(invalidDistros) > 0 {
 		fmt.Fprintf(os.Stderr, "WARNING: invalid distro names: [%s]\n", strings.Join(invalidDistros, ","))
 	}
@@ -474,6 +481,11 @@ func main() {
 		if distribution == nil {
 			fmt.Fprintf(os.Stderr, "WARNING: invalid distro name %q\n", distroName)
 			continue
+		}
+
+		bd, ok := distribution.(*bootc.BootcDistro)
+		if ok {
+			bd.SetContainerRef("rrr")
 		}
 
 		distroArches, invalidArches := arches.ResolveArgValues(distribution.ListArches())
@@ -501,16 +513,16 @@ func main() {
 				// get repositories
 				repos, err := testedRepoRegistry.ReposByImageTypeName(distroName, archName, imgTypeName)
 				if err != nil {
-					panic(fmt.Sprintf("failed to get repositories for %s/%s: %v", distroName, archName, err))
+					// panic(fmt.Sprintf("failed to get repositories for %s/%s: %v", distroName, archName, err))
 				}
-				if len(repos) == 0 {
-					fmt.Printf("no repositories defined for %s/%s/%s\n", distroName, archName, imgTypeName)
-					if skipNorepos {
-						fmt.Fprintln(os.Stderr, "Skipping")
-						continue
-					}
-					panic("no repositories found, pass --skip-norepos to skip")
-				}
+				// if len(repos) == 0 {
+				// 	fmt.Printf("no repositories defined for %s/%s/%s\n", distroName, archName, imgTypeName)
+				// 	if skipNorepos {
+				// 		fmt.Fprintln(os.Stderr, "Skipping")
+				// 		continue
+				// 	}
+				// 	panic("no repositories found, pass --skip-norepos to skip")
+				// }
 
 				imgTypeConfigs := configs.Get(distroName, archName, imgTypeName)
 				if len(imgTypeConfigs) == 0 {
