@@ -36,6 +36,7 @@ import (
 var _ = distro.CustomDepsolverDistro(&BootcDistro{})
 
 type BootcDistro struct {
+	name            string
 	imgref          string
 	buildImgref     string
 	sourceInfo      *osinfo.Info
@@ -573,37 +574,43 @@ type DistroOptions struct {
 
 // newBootcDistro returns a new instance of BootcDistro
 // from the given url
-func NewBootcDistro(imgref string, opts *DistroOptions) (*BootcDistro, error) {
-	if opts == nil {
-		opts = &DistroOptions{}
+func NewBootcDistro(name string, opts *DistroOptions) (*BootcDistro, error) {
+	bd := &BootcDistro{
+		name: name,
 	}
 
-	cnt, err := bibcontainer.New(imgref)
+	// NOTE: use bootc-generic-1 so that the distro loader detects it as
+	// 'bootc-generic' distro, version 1, and loads the 'bootc-generic.yaml'
+	// from the distro definitions.
+	// TODO: consider a bootc-specific loader that doesn't require name tricks
+	distroYAML, err := defs.LoadDistroWithoutImageTypes("bootc-generic-1")
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		err = errors.Join(err, cnt.Stop())
-	}()
-
-	info, err := osinfo.Load(cnt.Root())
-	if err != nil {
+	distroYAML.DefaultFSType = disk.FS_XFS
+	if err := distroYAML.LoadImageTypes(); err != nil {
 		return nil, err
 	}
 
-	defaultFs, err := cnt.DefaultRootfsType()
-	if err != nil {
-		return nil, err
+	// NOTE: Traditional distros define their supported architectures based on
+	// the platform list of each image type. For bootc-based images, let's hard
+	// code support for the main 4 architectures instead. Support will depend
+	// on the source container itself, which will be determined later.
+	// TODO: add the list of supported architectures to each image type, since
+	// not all architectures make sense for all types (e.g. AMIs should only be
+	// x86_64 and aarch64)
+	for _, a := range []arch.Arch{arch.ARCH_X86_64, arch.ARCH_AARCH64, arch.ARCH_PPC64LE, arch.ARCH_S390X} {
+		ba := &BootcArch{
+			arch: a,
+		}
+		for _, imgTypeYaml := range distroYAML.ImageTypes() {
+			ba.addImageTypes(BootcImageType{
+				ImageTypeYAML: imgTypeYaml,
+			})
+		}
+		bd.addArches(ba)
 	}
-	if opts.DefaultFs != "" {
-		defaultFs = opts.DefaultFs
-	}
-
-	cntSize, err := getContainerSize(imgref)
-	if err != nil {
-		return nil, fmt.Errorf("cannot get container size: %w", err)
-	}
-	return newBootcDistroAfterIntrospect(cnt.Arch(), info, imgref, defaultFs, cntSize)
+	return bd, nil
 }
 
 // newDistroYAMLFrom() returns the distroYAML for the given sourceInfo,
@@ -755,11 +762,16 @@ func newBootcDistroAfterIntrospect(archStr string, info *osinfo.Info, imgref, de
 var NewBootcDistroForTesting = newBootcDistroAfterIntrospect
 
 func DistroFactory(idStr string) distro.Distro {
-	l := strings.SplitN(idStr, ":", 2)
-	if l[0] != "bootc" {
+	// NOTE: The container registry, which loads container refs to define
+	// virtual distro variants for bootc-based images, prepends bootc: to each
+	// set of refs. This is fine when using the registry itself to initialise
+	// distro versions/variants, but in other cases, it requires the caller to
+	// know this particular quirk. This is not ideal, but workable for now.
+	parts := strings.SplitN(idStr, ":", 2)
+	if parts[0] != "bootc" {
 		return nil
 	}
-	imgRef := l[1]
+	name := parts[1]
 
-	return common.Must(NewBootcDistro(imgRef, nil))
+	return common.Must(NewBootcDistro(name, nil))
 }
