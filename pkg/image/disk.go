@@ -32,6 +32,12 @@ type DiskImage struct {
 	OSProduct string
 	OSVersion string
 	OSNick    string
+
+	// Install and use PQRPM in the OS pipeline to verify package signatures
+	UsePQRPM bool
+
+	// Ignore key import failures in the build pipeline
+	IgnoreBuildKeyImportFailures bool
 }
 
 func NewDiskImage(platform platform.Platform, filename string) *DiskImage {

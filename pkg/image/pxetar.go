@@ -18,6 +18,9 @@ type PXETar struct {
 	Compression      string
 
 	OSVersion string
+
+	UsePQRPM                  bool
+	IgnoreBuildKeyImportFailures bool
 }
 
 func NewPXETar(platform platform.Platform, filename string) *PXETar {

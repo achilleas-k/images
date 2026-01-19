@@ -19,6 +19,9 @@ type Archive struct {
 	Compression      string
 
 	OSVersion string
+
+	UsePQRPM                  bool
+	IgnoreBuildKeyImportFailures bool
 }
 
 func NewArchive(platform platform.Platform, filename string) *Archive {

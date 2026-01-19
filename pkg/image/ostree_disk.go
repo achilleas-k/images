@@ -33,6 +33,9 @@ type OSTreeDiskImage struct {
 	// Container buildable tweaks the buildroot to be container friendly,
 	// i.e. to not rely on an installed osbuild-selinux
 	ContainerBuildable bool
+
+	UsePQRPM                  bool
+	IgnoreBuildKeyImportFailures bool
 }
 
 func NewOSTreeDiskImageFromCommit(platform platform.Platform, filename string, commit ostree.SourceSpec) *OSTreeDiskImage {

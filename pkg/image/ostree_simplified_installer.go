@@ -43,6 +43,9 @@ type OSTreeSimplifiedInstaller struct {
 
 	// Ignition embedded configuration options
 	IgnitionEmbedded *ignition.EmbeddedOptions
+
+	UsePQRPM                  bool
+	IgnoreBuildKeyImportFailures bool
 }
 
 func NewOSTreeSimplifiedInstaller(platform platform.Platform, filename string, rawImage *OSTreeDiskImage, installDevice string) *OSTreeSimplifiedInstaller {

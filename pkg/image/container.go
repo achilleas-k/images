@@ -16,6 +16,9 @@ type BaseContainer struct {
 	OSCustomizations           manifest.OSCustomizations
 	OCIContainerCustomizations manifest.OCIContainerCustomizations
 	Environment                environment.Environment
+
+	UsePQRPM                  bool
+	IgnoreBuildKeyImportFailures bool
 }
 
 func NewBaseContainer(platform platform.Platform, filename string) *BaseContainer {

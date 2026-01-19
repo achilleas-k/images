@@ -32,6 +32,9 @@ type AnacondaOSTreeInstaller struct {
 	// Locale for the installer. This should be set to the same locale as the
 	// ISO OS payload, if known.
 	Locale string
+
+	UsePQRPM                  bool
+	IgnoreBuildKeyImportFailures bool
 }
 
 func NewAnacondaOSTreeInstaller(platform platform.Platform, filename string, commit ostree.SourceSpec) *AnacondaOSTreeInstaller {

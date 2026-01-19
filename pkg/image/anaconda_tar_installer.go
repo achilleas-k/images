@@ -44,6 +44,9 @@ type AnacondaTarInstaller struct {
 	Environment      environment.Environment
 
 	ExtraBasePackages rpmmd.PackageSet
+
+	UsePQRPM                  bool
+	IgnoreBuildKeyImportFailures bool
 }
 
 func NewAnacondaTarInstaller(platform platform.Platform, filename string) *AnacondaTarInstaller {

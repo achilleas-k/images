@@ -27,6 +27,9 @@ type AnacondaLiveInstaller struct {
 
 	AdditionalDracutModules []string
 	AdditionalDrivers       []string
+
+	UsePQRPM                  bool
+	IgnoreBuildKeyImportFailures bool
 }
 
 func NewAnacondaLiveInstaller(platform platform.Platform, filename string) *AnacondaLiveInstaller {

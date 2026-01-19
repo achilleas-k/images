@@ -26,6 +26,9 @@ type AnacondaNetInstaller struct {
 	ExtraBasePackages rpmmd.PackageSet
 
 	Language string
+
+	UsePQRPM                  bool
+	IgnoreBuildKeyImportFailures bool
 }
 
 func NewAnacondaNetInstaller(platform platform.Platform, filename string) *AnacondaNetInstaller {

@@ -30,6 +30,9 @@ type OSTreeContainer struct {
 	OSVersion              string
 	ExtraContainerPackages rpmmd.PackageSet // FIXME: this is never read
 	ContainerLanguage      string
+
+	UsePQRPM                  bool
+	IgnoreBuildKeyImportFailures bool
 }
 
 func NewOSTreeContainer(platform platform.Platform, filename string, ref string) *OSTreeContainer {

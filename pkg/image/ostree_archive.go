@@ -40,6 +40,9 @@ type OSTreeArchive struct {
 	// When true, runs bootupctl backend generate-update-metadata to
 	// transform /usr/lib/ostree-boot into bootupd-compatible update metadata.
 	Bootupd bool
+
+	UsePQRPM                  bool
+	IgnoreBuildKeyImportFailures bool
 }
 
 func NewOSTreeArchive(platform platform.Platform, filename string, ref string) *OSTreeArchive {
