@@ -168,6 +168,11 @@ func (d *BootcDistro) addArches(arches ...*Arch) {
 	}
 }
 
+func (d *BootcDistro) GetTweaks() *distro.Tweaks {
+	// The bootc distro does not require or support tweaks (yet)
+	return nil
+}
+
 func (a *Arch) Name() string {
 	return a.arch.String()
 }
