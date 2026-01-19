@@ -52,7 +52,11 @@ func (img *DiskImage) InstantiateManifest(m *manifest.Manifest,
 	runner runner.Runner,
 	rng *rand.Rand) (*artifact.Artifact, error) {
 
-	buildPipeline := addBuildBootstrapPipelines(m, runner, repos, nil)
+	buildOptions := &manifest.BuildOptions{
+		IgnoreKeyImportFailures: img.IgnoreBuildKeyImportFailures,
+	}
+
+	buildPipeline := addBuildBootstrapPipelines(m, runner, repos, buildOptions)
 	buildPipeline.Checkpoint()
 
 	osPipeline := manifest.NewOS(buildPipeline, img.platform, repos)
@@ -62,6 +66,7 @@ func (img *DiskImage) InstantiateManifest(m *manifest.Manifest,
 	osPipeline.OSProduct = img.OSProduct
 	osPipeline.OSVersion = img.OSVersion
 	osPipeline.OSNick = img.OSNick
+	osPipeline.UsePQRPM = img.UsePQRPM
 
 	rawImagePipeline := manifest.NewRawImage(buildPipeline, osPipeline)
 	rawImagePipeline.PartTool = img.PartTool

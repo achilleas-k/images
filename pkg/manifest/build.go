@@ -76,6 +76,9 @@ type BuildOptions struct {
 
 	// Ensure directories exist
 	EnsureDirs []*fsnode.Directory
+
+	// Ignore key import failures
+	IgnoreKeyImportFailures bool
 }
 
 // policy or default returns the selinuxPolicy or (if unset) the

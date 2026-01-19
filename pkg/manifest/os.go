@@ -240,6 +240,8 @@ type OS struct {
 	OSNick    string
 
 	inlineData []string
+
+	UsePQRPM bool
 }
 
 // NewOS creates a new OS pipeline. build is the build pipeline to use for
@@ -563,6 +565,11 @@ func (p *OS) serialize() (osbuild.Pipeline, error) {
 		}
 		rpmOptions.KernelInstallEnv = &osbuild.KernelInstallEnv{
 			BootRoot: espMountpoint,
+		}
+	}
+	if p.UsePQRPM {
+		rpmOptions.RPMKeys = &osbuild.RPMKeys{
+			BinPath: "/usr/lib/pqrpm/bin/rpmkeys",
 		}
 	}
 	pipeline.AddStage(osbuild.NewRPMStage(rpmOptions, osbuild.NewRpmStageSourceFilesInputs(p.packageSpecs)))

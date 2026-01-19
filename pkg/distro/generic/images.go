@@ -602,6 +602,11 @@ func diskImage(t *imageType,
 		img.PartTool = *t.ImageTypeYAML.DiskImagePartTool
 	}
 
+	if tweaks := t.Arch().Distro().GetTweaks(); tweaks != nil && tweaks.RPMKeys != nil {
+		img.UsePQRPM = tweaks.RPMKeys.UsePQRPM
+		img.IgnoreBuildKeyImportFailures = tweaks.RPMKeys.IgnoreBuildImportFailures
+	}
+
 	return img, nil
 }
 
@@ -627,6 +632,11 @@ func tarImage(t *imageType,
 	img.Compression = t.ImageTypeYAML.Compression
 	img.OSVersion = d.OsVersion()
 
+	if tweaks := t.Arch().Distro().GetTweaks(); tweaks != nil && tweaks.RPMKeys != nil {
+		img.UsePQRPM = tweaks.RPMKeys.UsePQRPM
+		img.IgnoreBuildKeyImportFailures = tweaks.RPMKeys.IgnoreBuildImportFailures
+	}
+
 	return img, nil
 }
 
@@ -648,6 +658,11 @@ func containerImage(t *imageType,
 	img.Environment = &t.ImageTypeYAML.Environment
 
 	img.OCIContainerCustomizations = ociContainerCustomizations(t)
+
+	if tweaks := t.Arch().Distro().GetTweaks(); tweaks != nil && tweaks.RPMKeys != nil {
+		img.UsePQRPM = tweaks.RPMKeys.UsePQRPM
+		img.IgnoreBuildKeyImportFailures = tweaks.RPMKeys.IgnoreBuildImportFailures
+	}
 
 	return img, nil
 }
@@ -678,6 +693,11 @@ func liveInstallerImage(t *imageType,
 	img.ISOCustomizations, err = isoCustomizations(t, bp.Customizations)
 	if err != nil {
 		return nil, err
+	}
+
+	if tweaks := t.Arch().Distro().GetTweaks(); tweaks != nil && tweaks.RPMKeys != nil {
+		img.UsePQRPM = tweaks.RPMKeys.UsePQRPM
+		img.IgnoreBuildKeyImportFailures = tweaks.RPMKeys.IgnoreBuildImportFailures
 	}
 
 	return img, nil
@@ -737,6 +757,11 @@ func imageInstallerImage(t *imageType,
 
 	img.RootfsCompression = "xz" // This also triggers using the bcj filter
 
+	if tweaks := t.Arch().Distro().GetTweaks(); tweaks != nil && tweaks.RPMKeys != nil {
+		img.UsePQRPM = tweaks.RPMKeys.UsePQRPM
+		img.IgnoreBuildKeyImportFailures = tweaks.RPMKeys.IgnoreBuildImportFailures
+	}
+
 	return img, nil
 }
 
@@ -773,6 +798,11 @@ func iotCommitImage(t *imageType,
 	// Enable bootupd metadata generation if configured
 	if imgConfig.BootupdGenMetadata != nil && *imgConfig.BootupdGenMetadata {
 		img.Bootupd = true
+	}
+
+	if tweaks := t.Arch().Distro().GetTweaks(); tweaks != nil && tweaks.RPMKeys != nil {
+		img.UsePQRPM = tweaks.RPMKeys.UsePQRPM
+		img.IgnoreBuildKeyImportFailures = tweaks.RPMKeys.IgnoreBuildImportFailures
 	}
 
 	return img, nil
@@ -812,6 +842,11 @@ func bootableContainerImage(t *imageType,
 		RootFilesystemType: "ext4",
 	}
 
+	if tweaks := t.Arch().Distro().GetTweaks(); tweaks != nil && tweaks.RPMKeys != nil {
+		img.UsePQRPM = tweaks.RPMKeys.UsePQRPM
+		img.IgnoreBuildKeyImportFailures = tweaks.RPMKeys.IgnoreBuildImportFailures
+	}
+
 	return img, nil
 }
 
@@ -848,6 +883,11 @@ func iotContainerImage(t *imageType,
 
 	img.OCIContainerCustomizations = ociContainerCustomizations(t)
 	img.OSTreeCommitServerCustomizations = ostreeCommitServerCustomizations(t)
+
+	if tweaks := t.Arch().Distro().GetTweaks(); tweaks != nil && tweaks.RPMKeys != nil {
+		img.UsePQRPM = tweaks.RPMKeys.UsePQRPM
+		img.IgnoreBuildKeyImportFailures = tweaks.RPMKeys.IgnoreBuildImportFailures
+	}
 
 	return img, nil
 }
@@ -906,6 +946,11 @@ func iotInstallerImage(t *imageType,
 		img.Locale = *locale
 	}
 
+	if tweaks := t.Arch().Distro().GetTweaks(); tweaks != nil && tweaks.RPMKeys != nil {
+		img.UsePQRPM = tweaks.RPMKeys.UsePQRPM
+		img.IgnoreBuildKeyImportFailures = tweaks.RPMKeys.IgnoreBuildImportFailures
+	}
+
 	return img, nil
 }
 
@@ -950,6 +995,11 @@ func iotImage(t *imageType,
 	img.PartitionTable = pt
 
 	img.Compression = t.ImageTypeYAML.Compression
+
+	if tweaks := t.Arch().Distro().GetTweaks(); tweaks != nil && tweaks.RPMKeys != nil {
+		img.UsePQRPM = tweaks.RPMKeys.UsePQRPM
+		img.IgnoreBuildKeyImportFailures = tweaks.RPMKeys.IgnoreBuildImportFailures
+	}
 
 	return img, nil
 }
@@ -1020,6 +1070,11 @@ func iotSimplifiedInstallerImage(t *imageType,
 
 	img.OSName = t.OSTree.Name
 
+	if tweaks := t.Arch().Distro().GetTweaks(); tweaks != nil && tweaks.RPMKeys != nil {
+		img.UsePQRPM = tweaks.RPMKeys.UsePQRPM
+		img.IgnoreBuildKeyImportFailures = tweaks.RPMKeys.IgnoreBuildImportFailures
+	}
+
 	return img, nil
 }
 
@@ -1088,6 +1143,11 @@ func networkInstallerImage(t *imageType,
 
 	img.RootfsCompression = "xz" // This also triggers using the bcj filter
 
+	if tweaks := t.Arch().Distro().GetTweaks(); tweaks != nil && tweaks.RPMKeys != nil {
+		img.UsePQRPM = tweaks.RPMKeys.UsePQRPM
+		img.IgnoreBuildKeyImportFailures = tweaks.RPMKeys.IgnoreBuildImportFailures
+	}
+
 	return img, nil
 }
 
@@ -1112,6 +1172,11 @@ func pxeTarImage(t *imageType,
 	img.Environment = &t.ImageTypeYAML.Environment
 	img.Compression = t.ImageTypeYAML.Compression
 	img.OSVersion = d.OsVersion()
+
+	if tweaks := t.Arch().Distro().GetTweaks(); tweaks != nil && tweaks.RPMKeys != nil {
+		img.UsePQRPM = tweaks.RPMKeys.UsePQRPM
+		img.IgnoreBuildKeyImportFailures = tweaks.RPMKeys.IgnoreBuildImportFailures
+	}
 
 	return img, nil
 }

@@ -29,6 +29,8 @@ type RPMStageOptions struct {
 
 	// Only install certain locales (sets `_install_langs` RPM macro)
 	InstallLangs []string `json:"install_langs,omitempty"`
+
+	RPMKeys *RPMKeys `json:"rpmkeys,omitempty"`
 }
 
 type Exclude struct {
@@ -70,6 +72,11 @@ type RPMStageReferenceMetadata struct {
 }
 
 func (*RPMStageReferenceMetadata) isFilesInputRefMetadata() {}
+
+type RPMKeys struct {
+	BinPath              string `json:"bin_path,omitempty"`
+	IgnoreImportFailures bool   `json:"ignore_import_failures,omitempty"`
+}
 
 // NewRPMStage creates a new RPM stage.
 func NewRPMStage(options *RPMStageOptions, inputs *RPMStageInputs) *Stage {
