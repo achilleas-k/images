@@ -17,6 +17,7 @@ import (
 	"fmt"
 
 	"github.com/osbuild/images/internal/common"
+	"github.com/osbuild/images/pkg/bootc"
 	"github.com/osbuild/images/pkg/container"
 	"github.com/osbuild/images/pkg/depsolvednf"
 	"github.com/osbuild/images/pkg/osbuild"
