@@ -14,6 +14,8 @@ import (
 
 const RNG_SEED_ENV_KEY = "OSBUILD_TESTING_RNG_SEED"
 
+var printonce bool
+
 // newRNGSeed generates a random seed value unless the env var
 // OSBUILD_TESTING_RNG_SEED is set.
 func newRNGSeed() (int64, error) {
@@ -22,7 +24,10 @@ func newRNGSeed() (int64, error) {
 		if err != nil {
 			return 0, fmt.Errorf("failed to parse %s: %s", RNG_SEED_ENV_KEY, err)
 		}
-		fmt.Fprintf(os.Stderr, "TEST MODE: using rng seed %d\n", envSeedInt)
+		if printonce {
+			fmt.Fprintf(os.Stderr, "TEST MODE: using rng seed %d\n", envSeedInt)
+			printonce = true
+		}
 		return envSeedInt, nil
 	}
 	randSeed, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
