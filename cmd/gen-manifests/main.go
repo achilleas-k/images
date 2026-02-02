@@ -14,25 +14,18 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
-	"slices"
 	"strings"
 	"time"
 
 	"github.com/gobwas/glob"
-	"go.yaml.in/yaml/v3"
 
 	"github.com/osbuild/blueprint/pkg/blueprint"
 	"github.com/osbuild/images/internal/buildconfig"
 	"github.com/osbuild/images/internal/cmdutil"
 	"github.com/osbuild/images/internal/common"
-	"github.com/osbuild/images/pkg/arch"
-	bibcontainer "github.com/osbuild/images/pkg/bib/container"
-	"github.com/osbuild/images/pkg/bib/osinfo"
 	"github.com/osbuild/images/pkg/container"
 	"github.com/osbuild/images/pkg/depsolvednf"
 	"github.com/osbuild/images/pkg/distro"
-	"github.com/osbuild/images/pkg/distro/bootc"
-	"github.com/osbuild/images/pkg/distro/defs"
 	"github.com/osbuild/images/pkg/distrofactory"
 	"github.com/osbuild/images/pkg/experimentalflags"
 	"github.com/osbuild/images/pkg/manifest"
@@ -411,18 +404,17 @@ func main() {
 	flag.BoolVar(&buildconfigAllowUnknown, "buildconfig-allow-unknown", false, "allow unknown keys in buildconfig")
 
 	// content args
-	var packages, containers, commits, fakeBootc bool
+	var packages, containers, commits, bootcContainers bool
 	flag.BoolVar(&packages, "packages", true, "depsolve package sets")
 	flag.BoolVar(&containers, "containers", true, "resolve container checksums")
 	flag.BoolVar(&commits, "commits", false, "resolve ostree commit IDs")
-	flag.BoolVar(&fakeBootc, "fake-bootc", false, "create fake bootc containers based on test/bootc-fake-containers.yaml")
+	flag.BoolVar(&bootcContainers, "bootc-containers", false, "resolve bootc container information")
 
 	// manifest selection args
-	var arches, distros, imgTypes, bootcRefs cmdutil.MultiValue
+	var arches, distros, imgTypes cmdutil.MultiValue
 	flag.Var(&arches, "arches", "comma-separated list of architectures (globs supported)")
 	flag.Var(&distros, "distros", "comma-separated list of distributions (globs supported)")
 	flag.Var(&imgTypes, "types", "comma-separated list of image types (globs supported)")
-	flag.Var(&bootcRefs, "bootc-refs", "comma-separated list of bootc-refs")
 
 	// dry-run
 	var dryRun bool
@@ -439,9 +431,10 @@ func main() {
 	jobs := make([]manifestJob, 0)
 
 	contentResolve := map[string]bool{
-		"packages":   packages,
-		"containers": containers,
-		"commits":    commits,
+		"packages":         packages,
+		"containers":       containers,
+		"commits":          commits,
+		"bootc-containers": bootcContainers,
 	}
 
 	var configs *BuildConfigs
@@ -470,11 +463,17 @@ func main() {
 	if len(invalidDistros) > 0 {
 		fmt.Fprintf(os.Stderr, "WARNING: invalid distro names: [%s]\n", strings.Join(invalidDistros, ","))
 	}
+
+	distros = append(distros, "bootc:centos-bootc:stream9")
 	for _, distroName := range distros {
 		distribution := distroFac.GetDistro(distroName)
 		if distribution == nil {
 			fmt.Fprintf(os.Stderr, "WARNING: invalid distro name %q\n", distroName)
 			continue
+		}
+
+		if strings.HasPrefix(distroName, "bootc") {
+			fmt.Fprintf(os.Stderr, "DISTRIBUTION %+v\n", distribution)
 		}
 
 		distroArches, invalidArches := arches.ResolveArgValues(distribution.ListArches())
@@ -530,149 +529,6 @@ func main() {
 					if dryRun {
 						fmt.Printf("%s,%s,%s,%s\n", distribution.Name(), archName, imgType.Name(), itConfig.Name)
 					} else {
-						job := makeManifestJob(itConfig, imgType, distribution, repos, archName, cacheRoot, outputDir, contentResolve, metadata, tmpdirRoot)
-						jobs = append(jobs, job)
-					}
-				}
-			}
-		}
-	}
-	for _, bootcRefTuple := range bootcRefs {
-		l := strings.SplitN(bootcRefTuple, "#", 2)
-		bootcRef := l[0]
-		var buildBootcRef string
-		if len(l) > 1 {
-			buildBootcRef = l[1]
-		}
-
-		distribution, err := bootc.NewBootcDistro(bootcRef, nil)
-		if err != nil && errors.Is(err, defs.ErrNoDefaultFs) {
-			// XXX: consider making this configurable but for now
-			// we just need diffable manifests
-			distribution, err = bootc.NewBootcDistro(bootcRef, &bootc.DistroOptions{
-				DefaultFs: "ext4",
-			})
-		}
-		if err != nil {
-			panic(err)
-		}
-		if buildBootcRef != "" {
-			if err := distribution.SetBuildContainer(buildBootcRef); err != nil {
-				panic(err)
-			}
-		}
-		for _, archName := range arches {
-			archi, err := distribution.GetArch(archName)
-			if err != nil {
-				panic(err)
-			}
-			for _, imgTypeName := range imgTypes {
-				imgType, err := archi.GetImageType(imgTypeName)
-				if err != nil {
-					panic(err)
-				}
-				// XXX: copied from loop above
-				imgTypeConfigs := configs.Get(distribution.Name(), archName, imgTypeName)
-				if len(imgTypeConfigs) == 0 {
-					if skipNoconfig {
-						continue
-					}
-					panic(fmt.Sprintf("no configs defined for image type %q for %s/%s", imgTypeName, distribution.Name(), archi.Name()))
-				}
-				for _, itConfig := range imgTypeConfigs {
-					if needsSkipping, reason := configs.needsSkipping(distribution.Name(), itConfig); needsSkipping {
-						fmt.Printf("Skipping %s for %s/%s (reason: %v)\n", itConfig.Name, imgTypeName, distribution.Name(), reason)
-						continue
-					}
-
-					if dryRun {
-						fmt.Printf("%s,%s,%s,%s\n", distribution.Name(), archName, imgType.Name(), itConfig.Name)
-					} else {
-						var repos []rpmmd.RepoConfig
-						job := makeManifestJob(itConfig, imgType, distribution, repos, archName, cacheRoot, outputDir, contentResolve, metadata, tmpdirRoot)
-						jobs = append(jobs, job)
-					}
-				}
-			}
-		}
-	}
-	if fakeBootc {
-		p := "test/bootc-fake-containers.yaml"
-		f, err := os.Open(p)
-		if err != nil {
-			panic(fmt.Errorf("cannot find %q", p))
-		}
-		defer f.Close()
-		type fakeBootcContainerYAML struct {
-			Arch          arch.Arch   `yaml:"arch"`
-			Info          osinfo.Info `yaml:"info"`
-			DefaultFs     string      `yaml:"default_fs"`
-			ContainerSize uint64      `yaml:"container_size"`
-			ImageRef      string      `yaml:"image_ref"`
-			ImageTypes    []string    `yaml:"image_types"`
-
-			BuildContainerRef  string      `yaml:"build_container_ref"`
-			BuildContainerInfo osinfo.Info `yaml:"build_container_info"`
-		}
-		type fakeContainersYAML struct {
-			Containers []fakeBootcContainerYAML
-		}
-		var fakeContainers fakeContainersYAML
-		dec := yaml.NewDecoder(f)
-		dec.KnownFields(true)
-		if err := dec.Decode(&fakeContainers); err != nil {
-			panic(err)
-		}
-		for _, fakeBootcCnt := range fakeContainers.Containers {
-			fakeBootcInfo := &bibcontainer.BootcInfo{
-				Imgref:        fakeBootcCnt.ImageRef,
-				OSInfo:        &fakeBootcCnt.Info,
-				Arch:          fakeBootcCnt.Arch.String(),
-				DefaultRootFs: fakeBootcCnt.DefaultFs,
-				Size:          fakeBootcCnt.ContainerSize,
-			}
-			distribution, err := bootc.NewBootcDistroForTesting(fakeBootcInfo)
-			if err != nil {
-				panic(err)
-			}
-
-			arches, _ := arches.ResolveArgValues(distribution.ListArches())
-			for _, archName := range arches {
-				archi, err := distribution.GetArch(archName)
-				if err != nil {
-					panic(err)
-				}
-				imgTypes, _ := imgTypes.ResolveArgValues(archi.ListImageTypes())
-				for _, imgTypeName := range imgTypes {
-					if !slices.Contains(fakeBootcCnt.ImageTypes, imgTypeName) {
-						continue
-					}
-
-					if fakeBootcCnt.BuildContainerRef != "" {
-						if err := distribution.SetBuildContainerForTesting(fakeBootcCnt.BuildContainerRef, &fakeBootcCnt.BuildContainerInfo); err != nil {
-							panic(err)
-						}
-					}
-
-					imgType, err := archi.GetImageType(imgTypeName)
-					if err != nil {
-						panic(err)
-					}
-					// XXX: copied from loop above
-					imgTypeConfigs := configs.Get(distribution.Name(), archName, imgTypeName)
-					if len(imgTypeConfigs) == 0 {
-						if skipNoconfig {
-							continue
-						}
-						panic(fmt.Sprintf("no configs defined for image type %q for %s/%s", imgTypeName, distribution.Name(), archi.Name()))
-					}
-					for _, itConfig := range imgTypeConfigs {
-						if needsSkipping, reason := configs.needsSkipping(distribution.Name(), itConfig); needsSkipping {
-							fmt.Printf("Skipping %s for %s/%s (reason: %v)\n", itConfig.Name, imgTypeName, distribution.Name(), reason)
-							continue
-						}
-
-						var repos []rpmmd.RepoConfig
 						job := makeManifestJob(itConfig, imgType, distribution, repos, archName, cacheRoot, outputDir, contentResolve, metadata, tmpdirRoot)
 						jobs = append(jobs, job)
 					}
