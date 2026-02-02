@@ -183,6 +183,7 @@ func (m Manifest) GetOSTreeSourceSpecs() map[string][]ostree.SourceSpec {
 }
 
 type SerializeOptions struct {
+	// TODO: move to tweaks?
 	RpmDownloader osbuild.RpmDownloader
 }
 
