@@ -186,7 +186,7 @@ type SerializeOptions struct {
 	RpmDownloader osbuild.RpmDownloader
 }
 
-func (m Manifest) Serialize(depsolvedSets map[string]depsolvednf.DepsolveResult, containerSpecs map[string][]container.Spec, ostreeCommits map[string][]ostree.CommitSpec, opts *SerializeOptions) (OSBuildManifest, error) {
+func (m Manifest) Serialize(depsolvedSets map[string]depsolvednf.DepsolveResult, containerSpecs map[string][]container.Spec, ostreeCommits map[string][]ostree.CommitSpec, bootcInfo bootc.Info, opts *SerializeOptions) (OSBuildManifest, error) {
 	if opts == nil {
 		opts = &SerializeOptions{}
 	}
