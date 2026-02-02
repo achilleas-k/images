@@ -58,7 +58,7 @@ func TestPXETarNoCustomizations(t *testing.T) {
 		},
 	}
 
-	osbm, err := mf.Serialize(packages, nil, nil, nil)
+	osbm, err := mf.Serialize(packages, nil, nil, nil, nil)
 	require.NoError(t, err)
 
 	// find the tar stage in the tar pipeline

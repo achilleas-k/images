@@ -56,7 +56,7 @@ func TestNewBuildWithExperimentalOverride(t *testing.T) {
 			buildIf := image.AddBuildBootstrapPipelines(&mf, runner, nil, nil)
 			require.NotNil(t, buildIf)
 
-			b, err := mf.Serialize(fakeDepsolve, fakeCntSpecs, nil, nil)
+			b, err := mf.Serialize(fakeDepsolve, fakeCntSpecs, nil, nil, nil)
 			assert.NoError(t, err)
 			pipelines, err := manifesttest.PipelineNamesFrom(b)
 			assert.NoError(t, err)

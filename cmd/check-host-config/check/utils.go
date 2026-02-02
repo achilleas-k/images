@@ -9,7 +9,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/osbuild/images/pkg/distro"
+	"github.com/osbuild/images/pkg/distro/osrelease"
 )
 
 // OSRelease contains parsed fields from /etc/os-release
@@ -26,7 +26,7 @@ type OSRelease struct {
 // The osReleasePath parameter is kept for API compatibility but ignored in the default implementation.
 var ParseOSRelease = func(osReleasePath string) (*OSRelease, error) {
 	log.Printf("ParseOSRelease: reading from system root\n")
-	osrelease, err := distro.ReadOSReleaseFromTree("/")
+	osrelease, err := osrelease.ReadOSReleaseFromTree("/")
 	if err != nil {
 		log.Printf("ParseOSRelease failed: %v\n", err)
 		return nil, err

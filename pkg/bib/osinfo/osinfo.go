@@ -15,7 +15,7 @@ import (
 	"github.com/osbuild/blueprint/pkg/blueprint"
 	"github.com/osbuild/images/pkg/bib/blueprintload"
 	"github.com/osbuild/images/pkg/disk"
-	"github.com/osbuild/images/pkg/distro"
+	"github.com/osbuild/images/pkg/distro/osrelease"
 	"github.com/osbuild/images/pkg/osbuild"
 )
 
@@ -247,11 +247,11 @@ func readKernelInfo(root string) (*KernelInfo, error) {
 }
 
 func Load(root string) (*Info, error) {
-	osrelease, err := distro.ReadOSReleaseFromTree(root)
+	releaseInfo, err := osrelease.ReadOSReleaseFromTree(root)
 	if err != nil {
 		return nil, err
 	}
-	if err := validateOSRelease(osrelease); err != nil {
+	if err := validateOSRelease(releaseInfo); err != nil {
 		return nil, err
 	}
 
@@ -309,17 +309,17 @@ func Load(root string) (*Info, error) {
 	}
 
 	var idLike []string
-	if osrelease["ID_LIKE"] != "" {
-		idLike = strings.Split(osrelease["ID_LIKE"], " ")
+	if releaseInfo["ID_LIKE"] != "" {
+		idLike = strings.Split(releaseInfo["ID_LIKE"], " ")
 	}
 
 	return &Info{
 		OSRelease: OSRelease{
-			ID:         osrelease["ID"],
-			VersionID:  osrelease["VERSION_ID"],
-			Name:       osrelease["NAME"],
-			PlatformID: osrelease["PLATFORM_ID"],
-			VariantID:  osrelease["VARIANT_ID"],
+			ID:         releaseInfo["ID"],
+			VersionID:  releaseInfo["VERSION_ID"],
+			Name:       releaseInfo["NAME"],
+			PlatformID: releaseInfo["PLATFORM_ID"],
+			VariantID:  releaseInfo["VARIANT_ID"],
 			IDLike:     idLike,
 		},
 

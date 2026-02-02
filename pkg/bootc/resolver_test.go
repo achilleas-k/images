@@ -1,4 +1,4 @@
-package container_test
+package bootc_test
 
 import (
 	"bytes"
@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/osbuild/images/pkg/bib/container"
+	"github.com/osbuild/images/pkg/bootc"
 )
 
 var failIfPodmanMissing = flag.Bool(
@@ -96,7 +96,7 @@ func TestNew(t *testing.T) {
 		t.Skip("skipping test: no podman")
 	}
 
-	c, err := container.New(testingImage)
+	c, err := bootc.NewContainer(testingImage)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		err = c.Stop()
@@ -127,7 +127,7 @@ func TestReadFile(t *testing.T) {
 		t.Skip("skipping test: no podman")
 	}
 
-	c, err := container.New(testingImage)
+	c, err := bootc.NewContainer(testingImage)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		err = c.Stop()
@@ -151,7 +151,7 @@ func TestCopyInto(t *testing.T) {
 	testfile := path.Join(tmpdir, "testfile")
 	require.NoError(t, os.WriteFile(testfile, []byte("Hello, world!"), 0644))
 
-	c, err := container.New(testingImage)
+	c, err := bootc.NewContainer(testingImage)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		err = c.Stop()
@@ -191,7 +191,7 @@ fi
 exec /usr/bin/podman "$@"
 `
 	makeFakePodman(t, fakePodman)
-	_, err := container.New(testingImage)
+	_, err := bootc.NewContainer(testingImage)
 	assert.ErrorContains(t, err, fmt.Sprintf("mounting %s container failed: ", testingImage))
 	assert.ErrorContains(t, err, "stderr:\nforced-crash")
 }
@@ -205,7 +205,7 @@ func TestRootfsTypeHappy(t *testing.T) {
 		makeFakePodman(t, fmt.Sprintf(`#!/bin/sh
 echo '%s'
 `, jsonStr))
-		cnt := container.Container{}
+		cnt := bootc.Container{}
 		rootfs, err := cnt.DefaultRootfsType()
 		assert.NoError(t, err)
 		assert.Equal(t, tc, rootfs)
@@ -218,7 +218,7 @@ func TestRootfsTypeSad(t *testing.T) {
 		makeFakePodman(t, fmt.Sprintf(`#!/bin/sh
 echo '%s'
 `, jsonStr))
-		cnt := container.Container{}
+		cnt := bootc.Container{}
 		_, err := cnt.DefaultRootfsType()
 		assert.ErrorContains(t, err, "unsupported root filesystem type: ext1, supported: ")
 	}

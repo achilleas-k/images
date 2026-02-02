@@ -7,6 +7,7 @@ import (
 	"github.com/osbuild/images/pkg/distro"
 	"github.com/osbuild/images/pkg/distro/bootc"
 	"github.com/osbuild/images/pkg/distro/generic"
+	"github.com/osbuild/images/pkg/distro/osrelease"
 	"github.com/osbuild/images/pkg/distro/test_distro"
 )
 
@@ -58,7 +59,7 @@ func (f *Factory) GetDistro(name string) distro.Distro {
 // FromHost returns a distro.Distro instance, that is specific to the host.
 // If the host distro is not supported, nil is returned.
 func (f *Factory) FromHost() distro.Distro {
-	hostDistroName, _ := distro.GetHostDistroName()
+	hostDistroName, _ := osrelease.GetHostDistroName()
 	return f.GetDistro(hostDistroName)
 }
 

@@ -227,7 +227,7 @@ func (mg *Generator) Generate(bp *blueprint.Blueprint, imgType distro.ImageType,
 	opts := &manifest.SerializeOptions{
 		RpmDownloader: mg.rpmDownloader,
 	}
-	mf, err := preManifest.Serialize(depsolved, containerSpecs, commitSpecs, opts)
+	mf, err := preManifest.Serialize(depsolved, containerSpecs, commitSpecs, nil, opts)
 	if err != nil {
 		return nil, err
 	}
