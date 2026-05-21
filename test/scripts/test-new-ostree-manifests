@@ -303,6 +303,7 @@ def build_new_images(build_requests):
             build_name = testlib.gen_build_name(distro, arch, image_type, config_name)
             image_search_path = os.path.join("build", build_name)
             testlib.boot_image(image_search_path, config_path)
+            testlib.upload_results(distro, arch, image_type, config_path)
 
     print("✅ DONE!")
 
