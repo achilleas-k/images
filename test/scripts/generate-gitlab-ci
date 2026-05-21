@@ -14,17 +14,11 @@ OSTREE_DISTROS = ["fedora", "rhel-8", "rhel-9", "centos-9"]
 BASE_CONFIG = """---
 stages:
   - init
-  - gen
   - build
-  - ostree-gen
   - ostree-build
-  - verify
   - finish
 
 variables:
-  # Set the parent pipeline ID as a global variable so that the child pipeline
-  # jobs can use it to retrieve artifacts.
-  PARENT_PIPELINE_ID: $CI_PIPELINE_ID
   GOPROXY: "https://proxy.golang.org,direct"
 
 init:
@@ -53,37 +47,9 @@ fail:
   when: on_failure
 """
 
-GEN_TEMPLATE = """
-"generate-build-config: [{distro}, {arch}]":
-  stage: gen
-  extends: .terraform
-  variables:
-    RUNNER: {runner}-{arch}
-    INTERNAL_NETWORK: "true"
-  script:
-    - sudo ./test/scripts/setup-osbuild-repo
-    - sudo ./test/scripts/install-dependencies
-    - ./test/scripts/generate-build-config --distro {distro} --arch {arch} build-config.yml
-  artifacts:
-    paths:
-      - build-config.yml
-"""
-
-TRIGGER_TEMPLATE = """
-"image-build-trigger: [{distro}, {arch}]":
+TEST_IMAGES_TEMPLATE = """
+"test-images: [{distro}, {arch}]":
   stage: build
-  trigger:
-    include:
-      - artifact: build-config.yml
-        job: "generate-build-config: [{distro}, {arch}]"
-    strategy: depend
-  needs:
-    - "generate-build-config: [{distro}, {arch}]"
-"""
-
-OSTREE_GEN_TEMPLATE = """
-"generate-ostree-build-config: [{distro}, {arch}]":
-  stage: ostree-gen
   extends: .terraform
   variables:
     RUNNER: {runner}-{arch}
@@ -91,31 +57,27 @@ OSTREE_GEN_TEMPLATE = """
   script:
     - sudo ./test/scripts/setup-osbuild-repo
     - sudo ./test/scripts/install-dependencies
-    - ./test/scripts/generate-ostree-build-config --distro {distro} --arch {arch} build-config.yml build-configs
-  artifacts:
-    paths:
-      - build-config.yml
-      - build-configs
-  needs:
-    - "image-build-trigger: [{distro}, {arch}]"
+    - ./test/scripts/test-new-manifests --distro {distro} --arch {arch}
 """
 
-OSTREE_TRIGGER_TEMPLATE = """
-"image-build-ostree-trigger: [{distro}, {arch}]":
+TEST_OSTREE_IMAGES_TEMPLATE = """
+"test-ostree-images: [{distro}, {arch}]":
   stage: ostree-build
-  trigger:
-    include:
-      - artifact: build-config.yml
-        job: "generate-ostree-build-config: [{distro}, {arch}]"
-    strategy: depend
+  extends: .terraform
+  variables:
+    RUNNER: {runner}-{arch}
+    INTERNAL_NETWORK: "true"
+  script:
+    - sudo ./test/scripts/setup-osbuild-repo
+    - sudo ./test/scripts/install-dependencies
+    - ./test/scripts/test-new-ostree-manifests --distro {distro} --arch {arch}
   needs:
-    - "generate-ostree-build-config: [{distro}, {arch}]"
+    - "test-images: [{distro}, {arch}]"
 """
-
 
 MANIFEST_GEN_TEMPLATE = """
 "generate-manifests: [{distro}, {arch}]":
-  stage: gen
+  stage: build
   extends: .terraform
   variables:
     RUNNER: {runner}-x86_64
@@ -148,22 +110,15 @@ def main():
     images = testlib.list_images(arches=ARCHITECTURES)
     combos = set()
 
-    gen_stage = []
-    trigger_stage = []
-    ostree_gen_stage = []
-    ostree_trigger_stage = []
+    build_stage = []
+    ostree_build_stage = []
     for img in sort_configs(images):
         combo = (img["distro"], img["arch"])
         if combo in combos:
             continue
 
         combos.add(combo)
-        gen_stage.append(GEN_TEMPLATE.format(
-            distro=img["distro"],
-            arch=img["arch"],
-            runner=RUNNER))
-
-        trigger_stage.append(TRIGGER_TEMPLATE.format(
+        build_stage.append(TEST_IMAGES_TEMPLATE.format(
             distro=img["distro"],
             arch=img["arch"],
             runner=RUNNER))
@@ -174,12 +129,7 @@ def main():
         else:
             continue
 
-        ostree_gen_stage.append(OSTREE_GEN_TEMPLATE.format(
-            distro=img["distro"],
-            arch=img["arch"],
-            runner=RUNNER))
-
-        ostree_trigger_stage.append(OSTREE_TRIGGER_TEMPLATE.format(
+        ostree_build_stage.append(TEST_OSTREE_IMAGES_TEMPLATE.format(
             distro=img["distro"],
             arch=img["arch"],
             runner=RUNNER))
@@ -197,10 +147,8 @@ def main():
     with open(config_path, "w", encoding="utf-8") as config_file:
         config_file.write(BASE_CONFIG.format(runner=RUNNER))
         config_file.write(testlib.BASE_CONFIG)
-        config_file.write("\n".join(gen_stage))
-        config_file.write("\n".join(trigger_stage))
-        config_file.write("\n".join(ostree_gen_stage))
-        config_file.write("\n".join(ostree_trigger_stage))
+        config_file.write("\n".join(build_stage))
+        config_file.write("\n".join(ostree_build_stage))
         config_file.write("\n".join(man_gen_stage))
 
 
