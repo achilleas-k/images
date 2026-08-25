@@ -1,4 +1,4 @@
-package generic_test
+package defs_test
 
 import (
 	"slices"
@@ -10,8 +10,8 @@ import (
 	"github.com/osbuild/blueprint/pkg/blueprint"
 	"github.com/osbuild/image-builder/pkg/arch"
 	"github.com/osbuild/image-builder/pkg/distro"
+	"github.com/osbuild/image-builder/pkg/distro/defs"
 	"github.com/osbuild/image-builder/pkg/distro/distro_test_common"
-	"github.com/osbuild/image-builder/pkg/distro/generic"
 )
 
 type rhel10FamilyDistro struct {
@@ -22,7 +22,7 @@ type rhel10FamilyDistro struct {
 var rhel10FamilyDistros = []rhel10FamilyDistro{
 	{
 		name:   "rhel-10.0",
-		distro: generic.DistroFactory("rhel-10.0"),
+		distro: defs.DistroFactory("rhel-10.0"),
 	},
 }
 
@@ -388,14 +388,14 @@ func TestRH10Rhel10_KernelOption(t *testing.T) {
 
 func TestRH10Rhel10_KernelOption_NoIfnames(t *testing.T) {
 	for _, distroName := range []string{"rhel-10.0", "centos-10"} {
-		distro := generic.DistroFactory(distroName)
+		distro := defs.DistroFactory(distroName)
 		for _, archName := range distro.ListArches() {
 			arch, err := distro.GetArch(archName)
 			assert.NoError(t, err)
 			for _, imgTypeName := range arch.ListImageTypes() {
 				imgType, err := arch.GetImageType(imgTypeName)
 				assert.NoError(t, err)
-				imgCfg := imgType.(*generic.ImageType).GetDefaultImageConfig()
+				imgCfg := imgType.(*defs.ImageType).GetDefaultImageConfig()
 				if imgCfg != nil {
 					assert.NotContains(t, imgCfg.KernelOptions, "net.ifnames=0", "type %s contains unwanted net.ifnames=0", imgType.Name())
 				}

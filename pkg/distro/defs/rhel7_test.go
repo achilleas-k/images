@@ -1,4 +1,4 @@
-package generic_test
+package defs_test
 
 import (
 	"testing"
@@ -8,8 +8,8 @@ import (
 
 	"github.com/osbuild/blueprint/pkg/blueprint"
 	"github.com/osbuild/image-builder/pkg/distro"
+	"github.com/osbuild/image-builder/pkg/distro/defs"
 	"github.com/osbuild/image-builder/pkg/distro/distro_test_common"
-	"github.com/osbuild/image-builder/pkg/distro/generic"
 )
 
 type rhelFamilyDistro struct {
@@ -20,7 +20,7 @@ type rhelFamilyDistro struct {
 var rhel7_FamilyDistros = []rhelFamilyDistro{
 	{
 		name:   "rhel-79",
-		distro: generic.DistroFactory("rhel-7.9"),
+		distro: defs.DistroFactory("rhel-7.9"),
 	},
 }
 
@@ -281,13 +281,13 @@ func TestRhel7DistroFactory(t *testing.T) {
 		},
 		{
 			strID:    "rhel-7.9",
-			expected: generic.DistroFactory("rhel-7.9"),
+			expected: defs.DistroFactory("rhel-7.9"),
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.strID, func(t *testing.T) {
-			d := generic.DistroFactory(tc.strID)
+			d := defs.DistroFactory(tc.strID)
 			if tc.expected == nil {
 				assert.Nil(t, d)
 			} else {
