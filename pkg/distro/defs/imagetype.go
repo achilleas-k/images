@@ -65,7 +65,8 @@ type imageType struct {
 	bootISO                 bool
 	useLegacyAnacondaConfig bool
 
-	variant string
+	isoLabel string
+	variant  string
 
 	ostree ostreeConfig
 
@@ -89,8 +90,7 @@ type imageType struct {
 	arch     *architecture
 	platform platform.Platform
 
-	image    imageFunc
-	isoLabel isoLabelFunc
+	image imageFunc
 
 	ostreeRef string
 }
@@ -98,7 +98,6 @@ type imageType struct {
 func newImageTypeFrom(d *distribution, ar *architecture, imgYAML ImageTypeYAML) (imageType, error) {
 	it := imageType{
 		ImageTypeYAML: imgYAML,
-		isoLabel:      d.getISOLabelFunc(imgYAML.ISOLabel),
 
 		name:        imgYAML.Name(),
 		nameAliases: imgYAML.NameAliases,
@@ -119,6 +118,12 @@ func newImageTypeFrom(d *distribution, ar *architecture, imgYAML ImageTypeYAML) 
 
 		ostree: ostreeConfig(imgYAML.OSTree),
 	}
+
+	isoLabel, err := d.resolveISOLabel(imgYAML.ISOLabel, ar.Name())
+	if err != nil {
+		return imageType{}, err
+	}
+	it.isoLabel = isoLabel
 
 	switch imgYAML.Image {
 	case "disk":
@@ -197,14 +202,7 @@ func (t *imageType) OSTreeURL() string {
 }
 
 func (t *imageType) ISOLabel() (string, error) {
-	if !t.bootISO {
-		return "", fmt.Errorf("image type %q is not an ISO", t.Name())
-	}
-	if t.isoLabel == nil {
-		return "", fmt.Errorf("no iso label function for %q", t.Name())
-	}
-
-	return t.isoLabel(t), nil
+	return t.isoLabel, nil
 }
 
 func (t *imageType) Size(size uint64) uint64 {
