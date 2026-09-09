@@ -99,6 +99,23 @@ func newImageTypeFrom(d *distribution, ar *architecture, imgYAML ImageTypeYAML) 
 	it := imageType{
 		ImageTypeYAML: imgYAML,
 		isoLabel:      d.getISOLabelFunc(imgYAML.ISOLabel),
+
+		name:        imgYAML.Name(),
+		nameAliases: imgYAML.NameAliases,
+		arch:        ar,
+		filename:    imgYAML.Filename,
+		mimeType:    imgYAML.MimeType,
+		defaultSize: imgYAML.DefaultSize,
+		exports:     imgYAML.Exports,
+		bootISO:     imgYAML.BootISO,
+
+		blueprint: blueprintOptions{
+			// The blueprint contains a few fields that are essentially
+			// metadata and not configuration / customizations. These should
+			// always be implicitly supported by all image types.
+			SupportedOptions: append(slices.Clone(imgYAML.Blueprint.SupportedOptions), "name", "version", "description"),
+			RequiredOptions:  imgYAML.Blueprint.RequiredOptions,
+		},
 	}
 
 	switch imgYAML.Image {
@@ -140,11 +157,11 @@ func newImageTypeFrom(d *distribution, ar *architecture, imgYAML ImageTypeYAML) 
 }
 
 func (t *imageType) Name() string {
-	return t.ImageTypeYAML.Name()
+	return t.name
 }
 
 func (t *imageType) Aliases() []string {
-	return t.ImageTypeYAML.NameAliases
+	return t.nameAliases
 }
 
 func (t *imageType) Arch() distro.Arch {
@@ -152,11 +169,11 @@ func (t *imageType) Arch() distro.Arch {
 }
 
 func (t *imageType) Filename() string {
-	return t.ImageTypeYAML.Filename
+	return t.filename
 }
 
 func (t *imageType) MIMEType() string {
-	return t.ImageTypeYAML.MimeType
+	return t.mimeType
 }
 
 func (t *imageType) OSTreeRef() string {
@@ -172,7 +189,7 @@ func (t *imageType) OSTreeURL() string {
 }
 
 func (t *imageType) ISOLabel() (string, error) {
-	if !t.ImageTypeYAML.BootISO {
+	if !t.bootISO {
 		return "", fmt.Errorf("image type %q is not an ISO", t.Name())
 	}
 	if t.isoLabel == nil {
@@ -184,11 +201,11 @@ func (t *imageType) ISOLabel() (string, error) {
 
 func (t *imageType) Size(size uint64) uint64 {
 	// Microsoft Azure requires vhd images to be rounded up to the nearest MB
-	if t.ImageTypeYAML.Name() == "vhd" && size%datasizes.MebiByte != 0 {
+	if t.Name() == "vhd" && size%datasizes.MebiByte != 0 {
 		size = (size/datasizes.MebiByte + 1) * datasizes.MebiByte
 	}
 	if size == 0 {
-		size = t.ImageTypeYAML.DefaultSize.Uint64()
+		size = t.defaultSize.Uint64()
 	}
 	if t.ImageTypeYAML.DiskImageGiBAligned {
 		size = (size + datasizes.GibiByte - 1) &^ (datasizes.GibiByte - 1)
@@ -201,10 +218,7 @@ func (t *imageType) PayloadPackageSets() []string {
 }
 
 func (t *imageType) Exports() []string {
-	if len(t.ImageTypeYAML.Exports) > 0 {
-		return t.ImageTypeYAML.Exports
-	}
-	return []string{"assembler"}
+	return t.exports
 }
 
 func (t *imageType) BootMode() platform.BootMode {
@@ -273,7 +287,7 @@ func (t *imageType) getDefaultImageConfig() *distro.ImageConfig {
 }
 
 func (t *imageType) getDefaultInstallerConfig() (*distro.InstallerConfig, error) {
-	if !t.ImageTypeYAML.BootISO {
+	if !t.bootISO {
 		return nil, fmt.Errorf("image type %q is not an ISO", t.Name())
 	}
 	d := t.Arch().Distro()
@@ -281,7 +295,7 @@ func (t *imageType) getDefaultInstallerConfig() (*distro.InstallerConfig, error)
 }
 
 func (t *imageType) getDefaultISOConfig() (*distro.ISOConfig, error) {
-	if !t.ImageTypeYAML.BootISO {
+	if !t.bootISO {
 		return nil, fmt.Errorf("image type %q is not an ISO", t.Name())
 	}
 	d := t.Arch().Distro()
@@ -421,14 +435,11 @@ func (t *imageType) checkOptions(bp *blueprint.Blueprint, options distro.ImageOp
 }
 
 func (t *imageType) RequiredBlueprintOptions() []string {
-	return t.ImageTypeYAML.Blueprint.RequiredOptions
+	return t.blueprint.RequiredOptions
 }
 
 func (t *imageType) SupportedBlueprintOptions() []string {
-	// The blueprint contains a few fields that are essentially metadata and
-	// not configuration / customizations. These should always be implicitly
-	// supported by all image types.
-	return append(t.ImageTypeYAML.Blueprint.SupportedOptions, "name", "version", "description")
+	return t.blueprint.SupportedOptions
 }
 
 func (t *imageType) expandOSTreeRefTemplate(ar *architecture, id distro.ID) error {
