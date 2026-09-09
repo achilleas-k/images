@@ -116,6 +116,8 @@ func newImageTypeFrom(d *distribution, ar *architecture, imgYAML ImageTypeYAML) 
 			SupportedOptions: append(slices.Clone(imgYAML.Blueprint.SupportedOptions), "name", "version", "description"),
 			RequiredOptions:  imgYAML.Blueprint.RequiredOptions,
 		},
+
+		ostree: ostreeConfig(imgYAML.OSTree),
 	}
 
 	switch imgYAML.Image {
@@ -191,11 +193,7 @@ func (t *imageType) OSTreeRef() string {
 }
 
 func (t *imageType) OSTreeURL() string {
-	if t.ImageTypeYAML.IsOSTreeBasedImageType() {
-		return t.ImageTypeYAML.OSTree.URL
-	}
-
-	return ""
+	return t.ostree.URL
 }
 
 func (t *imageType) ISOLabel() (string, error) {
