@@ -41,7 +41,7 @@ type blueprintOptions struct {
 }
 
 type imageType struct {
-	ImageTypeYAML
+	ImageTypeYAML ImageTypeYAML
 
 	name        string
 	nameAliases []string
@@ -268,7 +268,7 @@ func (t *imageType) getPartitionTable(customizations *blueprint.Customizations, 
 
 func (t *imageType) getDefaultImageConfig() *distro.ImageConfig {
 	d := t.Arch().Distro()
-	imageConfig := t.ImageConfig(d.ID(), t.arch.arch.String())
+	imageConfig := t.ImageTypeYAML.ImageConfig(d.ID(), t.arch.arch.String())
 	return imageConfig.InheritFrom(d.ImageConfig())
 }
 
@@ -277,7 +277,7 @@ func (t *imageType) getDefaultInstallerConfig() (*distro.InstallerConfig, error)
 		return nil, fmt.Errorf("image type %q is not an ISO", t.Name())
 	}
 	d := t.Arch().Distro()
-	return t.InstallerConfig(d.ID(), t.arch.arch.String())
+	return t.ImageTypeYAML.InstallerConfig(d.ID(), t.arch.arch.String())
 }
 
 func (t *imageType) getDefaultISOConfig() (*distro.ISOConfig, error) {
@@ -285,12 +285,12 @@ func (t *imageType) getDefaultISOConfig() (*distro.ISOConfig, error) {
 		return nil, fmt.Errorf("image type %q is not an ISO", t.Name())
 	}
 	d := t.Arch().Distro()
-	return t.ISOConfig(d.ID(), t.arch.arch.String()), nil
+	return t.ImageTypeYAML.ISOConfig(d.ID(), t.arch.arch.String()), nil
 }
 
 func (t *imageType) getDefaultDiskConfig() (*distro.DiskConfig, error) {
 	d := t.Arch().Distro()
-	return t.DiskConfig(d.ID(), t.arch.arch.String()), nil
+	return t.ImageTypeYAML.DiskConfig(d.ID(), t.arch.arch.String()), nil
 }
 
 func (t *imageType) PartitionType() disk.PartitionTableType {
